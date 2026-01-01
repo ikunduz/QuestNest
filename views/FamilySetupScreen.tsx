@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GameButton } from '../components/GameButton';
 import { Shield, User, Heart, Star } from 'lucide-react-native';
 import { createFamily, createUser } from '../services/familyService';
@@ -27,8 +28,8 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
                 family_id: family.id,
                 name: parentName,
                 role: 'parent',
-                parent_type: 'mom', // Varsayılan, daha sonra değiştirilebilir
-                pin_hash: pin // Basitlik için şimdilik düz metin (gerçek projede hashlenmeli)
+                parent_type: 'mom',
+                pin_hash: pin
             });
 
             // 3. Çocuk oluştur
@@ -39,8 +40,22 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
                 hero_class: 'knight'
             });
 
+            // 4. Kullanıcıyı AsyncStorage'a kaydet (çocuk olarak başlıyor)
+            const userState = {
+                id: child.id,
+                family_id: family.id,
+                role: 'child',
+                name: childName,
+                xp: 0,
+                level: 1,
+                streak: 0,
+                heroClass: 'knight',
+                pin_hash: pin // PIN'i de saklıyoruz, parent moduna geçişte lazım
+            };
+            await AsyncStorage.setItem('questnest_user', JSON.stringify(userState));
+
             Alert.alert("Başarılı!", `Ailen oluşturuldu. Aile Kodun: ${familyCode}. Lütfen bu kodu sakla.`, [
-                { text: "MACERAYA BAŞLA", onPress: () => navigation.replace('Main', { familyId: family.id, userId: child.id }) }
+                { text: "MACERAYA BAŞLA", onPress: () => navigation.replace('Main', { initialUser: userState }) }
             ]);
         } catch (error: any) {
             Alert.alert("Hata", error.message);

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GameButton } from '../components/GameButton';
 import { UserPlus, Search } from 'lucide-react-native';
 import { findFamilyByCode, createUser } from '../services/familyService';
@@ -25,17 +26,29 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
                 return;
             }
 
-            // 2. Kullanıcıyı oluştur (varsayılan olarak ebeveyn katılıyor varsayıyoruz, 
-            // çünkü çocuk genelde ilk kurulumda ekleniyor. Ama rol seçimi eklenebilir.)
+            // 2. Kullanıcıyı oluştur
             const user = await createUser({
                 family_id: family.id,
                 name: userName,
                 role: 'parent',
-                parent_type: 'dad' // Veya seçim eklenebilir
+                parent_type: 'dad'
             });
 
+            // 3. Kullanıcıyı AsyncStorage'a kaydet
+            const userState = {
+                id: user.id,
+                family_id: family.id,
+                role: 'parent',
+                name: userName,
+                xp: 0,
+                level: 1,
+                streak: 0,
+                parent_type: 'dad'
+            };
+            await AsyncStorage.setItem('questnest_user', JSON.stringify(userState));
+
             Alert.alert("Hoş Geldin!", `${family.name} grubuna başarıyla katıldın.`, [
-                { text: "MACERAYA BAŞLA", onPress: () => navigation.replace('Main', { familyId: family.id, userId: user.id }) }
+                { text: "MACERAYA BAŞLA", onPress: () => navigation.replace('Main', { initialUser: userState }) }
             ]);
         } catch (error: any) {
             Alert.alert("Hata", "Aileye katılırken bir sorun oluştu. Kodun doğru olduğundan emin olun.");
