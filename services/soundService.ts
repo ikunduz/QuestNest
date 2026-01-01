@@ -1,64 +1,37 @@
 import { Audio } from 'expo-av';
 
-// Ses dosyaları - require ile yüklenir
-const SOUNDS = {
-    click: require('../assets/sounds/click.mp3'),
-    questComplete: require('../assets/sounds/quest_complete.mp3'),
-    levelUp: require('../assets/sounds/level_up.mp3'),
-    xpGain: require('../assets/sounds/xp_gain.mp3'),
-    blessing: require('../assets/sounds/blessing.mp3'),
-    feed: require('../assets/sounds/feed.mp3'),
-    error: require('../assets/sounds/error.mp3'),
-};
-
-type SoundName = keyof typeof SOUNDS;
+type SoundName = 'click' | 'questComplete' | 'levelUp' | 'xpGain' | 'blessing' | 'feed' | 'error';
 
 class SoundService {
     private sounds: Map<SoundName, Audio.Sound> = new Map();
     private isEnabled: boolean = true;
+    private initialized: boolean = false;
 
     async init() {
+        if (this.initialized) return;
+
         try {
             await Audio.setAudioModeAsync({
                 playsInSilentModeIOS: true,
                 staysActiveInBackground: false,
                 shouldDuckAndroid: true,
             });
+            this.initialized = true;
         } catch (e) {
-            console.error('Audio init error:', e);
+            console.log('Audio init skipped (no audio mode support)');
         }
     }
 
-    async preload() {
-        try {
-            for (const [name, source] of Object.entries(SOUNDS)) {
-                const { sound } = await Audio.Sound.createAsync(source);
-                this.sounds.set(name as SoundName, sound);
-            }
-        } catch (e) {
-            console.error('Sound preload error:', e);
-        }
-    }
-
+    // Placeholder sound player - uses system beep or silent
     async play(name: SoundName) {
         if (!this.isEnabled) return;
 
-        try {
-            const sound = this.sounds.get(name);
-            if (sound) {
-                await sound.replayAsync();
-            } else {
-                // Lazy load if not preloaded
-                const source = SOUNDS[name];
-                if (source) {
-                    const { sound: newSound } = await Audio.Sound.createAsync(source);
-                    await newSound.playAsync();
-                    this.sounds.set(name, newSound);
-                }
-            }
-        } catch (e) {
-            console.error(`Play sound error (${name}):`, e);
-        }
+        // Ses dosyaları eklendiğinde burada yüklenecek
+        // Şimdilik sadece console log
+        console.log(`🔊 Sound: ${name}`);
+
+        // Haptic feedback alternatifi (import edilirse)
+        // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
     setEnabled(enabled: boolean) {
@@ -67,7 +40,11 @@ class SoundService {
 
     async cleanup() {
         for (const sound of this.sounds.values()) {
-            await sound.unloadAsync();
+            try {
+                await sound.unloadAsync();
+            } catch (e) {
+                // Ignore cleanup errors
+            }
         }
         this.sounds.clear();
     }
