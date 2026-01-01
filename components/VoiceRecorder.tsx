@@ -19,7 +19,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
     const recordingRef = useRef<Audio.Recording | null>(null);
     const soundRef = useRef<Audio.Sound | null>(null);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const startRecording = async () => {
         try {
