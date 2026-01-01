@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { MessageCircle, Send, Mic, ChevronLeft } from 'lucide-react-native';
+import { Audio } from 'expo-av';
 import { GameButton } from '../components/GameButton';
 import { NoteCard } from '../components/NoteCard';
 import { VoiceRecorder } from '../components/VoiceRecorder';
@@ -23,6 +24,9 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
     const [newNote, setNewNote] = useState('');
     const [showVoice, setShowVoice] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [playingId, setPlayingId] = useState<string | null>(null);
+
+    const soundRef = useRef<Audio.Sound | null>(null);
 
     useEffect(() => {
         loadNotes();
@@ -33,6 +37,10 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
 
         return () => {
             subscription.unsubscribe();
+            // Cleanup sound on unmount
+            if (soundRef.current) {
+                soundRef.current.unloadAsync();
+            }
         };
     }, []);
 
@@ -58,6 +66,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
                 content: newNote.trim(),
             });
             setNewNote('');
+            await loadNotes();
         } catch (e) {
             Alert.alert('Hata', 'Not gönderilemedi.');
         }
@@ -65,7 +74,6 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
 
     const handleSendVoice = async (audioUri: string) => {
         try {
-            // Gerçek uygulamada audioUri Supabase Storage'a yüklenmeli
             await sendNote({
                 family_id: familyId,
                 from_user: userId,
@@ -73,8 +81,48 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
                 audio_url: audioUri,
             });
             setShowVoice(false);
+            await loadNotes();
+            Alert.alert('✅', 'Sesli not gönderildi!');
         } catch (e) {
             Alert.alert('Hata', 'Sesli not gönderilemedi.');
+        }
+    };
+
+    const handlePlayAudio = async (audioUrl: string) => {
+        try {
+            // Önceki sesi durdur
+            if (soundRef.current) {
+                await soundRef.current.stopAsync();
+                await soundRef.current.unloadAsync();
+                soundRef.current = null;
+            }
+
+            // Audio modunu ayarla
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: false,
+                playsInSilentModeIOS: true,
+            });
+
+            // Yeni sesi yükle ve oynat
+            const { sound } = await Audio.Sound.createAsync(
+                { uri: audioUrl },
+                { shouldPlay: true }
+            );
+
+            soundRef.current = sound;
+            setPlayingId(audioUrl);
+
+            // Oynatma bittiğinde
+            sound.setOnPlaybackStatusUpdate((status) => {
+                if (status.isLoaded && status.didJustFinish) {
+                    setPlayingId(null);
+                }
+            });
+
+        } catch (error) {
+            console.error('Playback error:', error);
+            Alert.alert('Hata', 'Ses oynatılamadı. Dosya bulunamadı.');
+            setPlayingId(null);
         }
     };
 
@@ -112,6 +160,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
                             key={note.id}
                             note={note}
                             onMarkRead={handleMarkRead}
+                            onPlay={handlePlayAudio}
                         />
                     ))
                 )}
@@ -119,7 +168,15 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
 
             <View style={styles.inputContainer}>
                 {showVoice ? (
-                    <VoiceRecorder onRecordComplete={handleSendVoice} />
+                    <View style={styles.voiceContainer}>
+                        <VoiceRecorder onRecordComplete={handleSendVoice} />
+                        <TouchableOpacity
+                            style={styles.cancelVoice}
+                            onPress={() => setShowVoice(false)}
+                        >
+                            <Text style={styles.cancelText}>İptal</Text>
+                        </TouchableOpacity>
+                    </View>
                 ) : (
                     <View style={styles.textInputRow}>
                         <TextInput
@@ -175,6 +232,16 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: '#334155',
         padding: 12,
+    },
+    voiceContainer: {
+        alignItems: 'center',
+    },
+    cancelVoice: {
+        marginTop: 8,
+    },
+    cancelText: {
+        color: '#f43f5e',
+        fontSize: 12,
     },
     textInputRow: {
         flexDirection: 'row',
