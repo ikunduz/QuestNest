@@ -159,11 +159,11 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
       {/* Animated Blessing Hearts */}
       <FloatingHearts visible={isBlessingActive} from={user.lastBlessingFrom} />
 
-      {/* Hero Stats */}
+      {/* Compact Hero Stats */}
       <View style={styles.statsCard}>
         <View style={styles.statsHeader}>
           <TouchableOpacity onPress={() => setShowProfile(true)} style={styles.avatarContainer}>
@@ -171,39 +171,45 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
               {user.avatar ? (
                 <Image source={{ uri: user.avatar }} style={styles.avatarSmall} />
               ) : (
-                <UserCircle color="#fbbf24" size={40} />
+                <UserCircle color="#fbbf24" size={32} />
               )}
             </View>
           </TouchableOpacity>
           <View style={styles.heroInfo}>
-            <Text style={styles.heroName}>{user.name}</Text>
+            <Text style={styles.heroName} numberOfLines={1}>{user.name}</Text>
             <View style={styles.heroSubInfo}>
               <View style={styles.classBadge}>
                 <Text style={styles.classBadgeText}>
-                  {user.heroClass === 'mage' ? 'Büyücü' : user.heroClass === 'ranger' ? 'Okçu' : 'Işık Muhafızı'}
+                  {user.heroClass === 'mage' ? '🧙' : user.heroClass === 'ranger' ? '🏹' : '🛡️'} Lv.{user.level}
                 </Text>
               </View>
-              <Text style={styles.levelInfo}>Seviye {user.level}</Text>
             </View>
+          </View>
+          <View style={styles.xpBadge}>
+            <Sparkles color="#fbbf24" size={14} />
+            <Text style={styles.xpBadgeText}>{user.xp}</Text>
           </View>
         </View>
         <XPBar xp={user.xp} level={user.level} />
       </View>
 
-      {/* AI Wisdom */}
+      {/* AI Wisdom - Compact */}
       <View style={styles.wisdomCard}>
-        <Text style={styles.wisdomLabel}>BİLGENİN ÖĞÜDÜ</Text>
-        <Text style={styles.wisdomText}>"{wisdom}"</Text>
+        <Text style={styles.wisdomText} numberOfLines={2}>💡 "{wisdom}"</Text>
       </View>
 
       {/* Quest List */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}><Sword size={20} color="#fbbf24" /> AKTİF GÖREVLER</Text>
+        <View style={styles.sectionHeader}>
+          <Sword size={18} color="#fbbf24" />
+          <Text style={styles.sectionTitle}>AKTİF GÖREVLER</Text>
+          <Text style={styles.sectionCount}>{activeQuests.length}</Text>
+        </View>
 
         {activeQuests.length === 0 ? (
           <View style={styles.emptyBox}>
-            <CheckCircle2 size={40} color="#10b981" />
-            <Text style={styles.emptyText}>ZAFER!</Text>
+            <CheckCircle2 size={32} color="#10b981" />
+            <Text style={styles.emptyText}>Tüm görevler tamamlandı! 🎉</Text>
           </View>
         ) : (
           activeQuests.map((quest) => (
@@ -212,69 +218,100 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
               onPress={() => setSelectedQuest(quest)}
               style={styles.questListItem}
             >
-              <View style={styles.questListIcon}>
-                {CATEGORY_METADATA[quest.category].icon}
+              <View style={[styles.questListIcon, { backgroundColor: CATEGORY_METADATA[quest.category].color + '30' }]}>
+                {React.cloneElement(CATEGORY_METADATA[quest.category].icon as React.ReactElement, { size: 20, color: CATEGORY_METADATA[quest.category].color } as any)}
               </View>
               <View style={styles.questListText}>
-                <Text style={styles.questListTitle}>{quest.titleKey}</Text>
+                <Text style={styles.questListTitle} numberOfLines={1}>{quest.titleKey}</Text>
                 <Text style={styles.questListXP}>+{quest.xpReward} XP</Text>
               </View>
-              <ChevronRight color="#475569" />
+              <ChevronRight color="#475569" size={18} />
             </TouchableOpacity>
           ))
         )}
       </View>
-    </View>
+
+      {/* Pending Quests */}
+      {pendingQuests.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Trophy size={18} color="#f59e0b" />
+            <Text style={styles.sectionTitle}>ONAY BEKLİYOR</Text>
+            <Text style={[styles.sectionCount, { backgroundColor: '#f59e0b' }]}>{pendingQuests.length}</Text>
+          </View>
+          {pendingQuests.map((quest) => (
+            <View key={quest.id} style={[styles.questListItem, { borderColor: '#f59e0b', borderWidth: 1 }]}>
+              <View style={[styles.questListIcon, { backgroundColor: 'rgba(245, 158, 11, 0.2)' }]}>
+                <Trophy size={20} color="#f59e0b" />
+              </View>
+              <View style={styles.questListText}>
+                <Text style={styles.questListTitle} numberOfLines={1}>{quest.titleKey}</Text>
+                <Text style={[styles.questListXP, { color: '#f59e0b' }]}>Ebeveyn onayı bekleniyor...</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Bottom spacing for navbar */}
+      <View style={{ height: 100 }} />
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { padding: 16 },
-  profileContainer: { padding: 20 },
-  questDetailContainer: { padding: 16 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  title: { fontSize: 24, color: '#fbbf24', fontWeight: 'bold' },
-  profileBox: { backgroundColor: '#1e293b', padding: 24, borderRadius: 32, alignItems: 'center', marginBottom: 24 },
-  avatarCircle: { width: 150, height: 150, borderRadius: 75, backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center', marginBottom: 20, overflow: 'hidden', borderWidth: 4, borderColor: '#fbbf24' },
+  container: { flex: 1, backgroundColor: '#0f172a' },
+  contentContainer: { padding: 16, paddingBottom: 0 },
+  profileContainer: { flex: 1, backgroundColor: '#0f172a', padding: 20 },
+  questDetailContainer: { flex: 1, backgroundColor: '#0f172a', padding: 16 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  title: { fontSize: 20, color: '#fbbf24', fontWeight: 'bold' },
+  profileBox: { backgroundColor: '#1e293b', padding: 24, borderRadius: 24, alignItems: 'center', marginBottom: 20 },
+  avatarCircle: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center', marginBottom: 16, overflow: 'hidden', borderWidth: 3, borderColor: '#fbbf24' },
   avatarImg: { width: '100%', height: '100%' },
   classGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-  classCard: { flex: 1, padding: 16, borderRadius: 16, alignItems: 'center', marginHorizontal: 4, borderWidth: 2 },
+  classCard: { flex: 1, padding: 12, borderRadius: 12, alignItems: 'center', marginHorizontal: 4, borderWidth: 2 },
   classCardActive: { borderColor: '#fbbf24', backgroundColor: 'rgba(251, 191, 36, 0.1)' },
   classCardInactive: { borderColor: '#334155', backgroundColor: '#1e293b', opacity: 0.5 },
-  classLabel: { color: '#fff', fontSize: 10, fontWeight: 'bold', marginTop: 8 },
+  classLabel: { color: '#fff', fontSize: 9, fontWeight: 'bold', marginTop: 6 },
   backBtn: { flexDirection: 'row', alignItems: 'center' },
-  backText: { color: '#fbbf24', marginLeft: 4 },
-  questCard: { backgroundColor: '#1e293b', padding: 32, borderRadius: 40, alignItems: 'center' },
-  questIconBox: { width: 80, height: 80, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  questTitle: { fontSize: 24, color: '#fff', fontWeight: 'bold', marginBottom: 8 },
-  questDesc: { fontSize: 16, color: '#cbd5e1', textAlign: 'center', marginBottom: 24, fontStyle: 'italic' },
-  rewardBox: { backgroundColor: '#0f172a', padding: 16, borderRadius: 24, width: '100%', alignItems: 'center', marginBottom: 24 },
-  rewardLabel: { fontSize: 10, color: '#fbbf24', fontWeight: 'bold', marginBottom: 4 },
-  rewardValue: { fontSize: 24, color: '#fbbf24', fontWeight: 'bold', flexDirection: 'row', alignItems: 'center' },
-  statsCard: { backgroundColor: 'rgba(30, 41, 59, 0.5)', padding: 20, borderRadius: 32, marginBottom: 24 },
-  statsHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  avatarContainer: { width: 64, height: 64, borderRadius: 16, backgroundColor: '#fbbf24', padding: 2 },
-  avatarInner: { flex: 1, backgroundColor: '#0f172a', borderRadius: 14, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  backText: { color: '#fbbf24', marginLeft: 4, fontSize: 14 },
+  questCard: { backgroundColor: '#1e293b', padding: 24, borderRadius: 24, alignItems: 'center' },
+  questIconBox: { width: 64, height: 64, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  questTitle: { fontSize: 20, color: '#fff', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
+  questDesc: { fontSize: 14, color: '#cbd5e1', textAlign: 'center', marginBottom: 20, fontStyle: 'italic' },
+  rewardBox: { backgroundColor: '#0f172a', padding: 14, borderRadius: 16, width: '100%', alignItems: 'center', marginBottom: 20 },
+  rewardLabel: { fontSize: 9, color: '#fbbf24', fontWeight: 'bold', marginBottom: 4, letterSpacing: 1 },
+  rewardValue: { fontSize: 20, color: '#fbbf24', fontWeight: 'bold' },
+  statsCard: { backgroundColor: 'rgba(30, 41, 59, 0.7)', padding: 14, borderRadius: 20, marginBottom: 12 },
+  statsHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  avatarContainer: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#fbbf24', padding: 2 },
+  avatarInner: { flex: 1, backgroundColor: '#0f172a', borderRadius: 10, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   avatarSmall: { width: '100%', height: '100%' },
-  heroInfo: { marginLeft: 16 },
-  heroName: { fontSize: 24, color: '#fff', fontWeight: 'bold' },
-  heroSubInfo: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  classBadge: { backgroundColor: 'rgba(251, 191, 36, 0.1)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 16 },
-  classBadgeText: { color: '#fbbf24', fontSize: 10, fontWeight: 'bold' },
-  levelInfo: { color: '#94a3b8', fontSize: 12, marginLeft: 8 },
-  wisdomCard: { backgroundColor: '#1e1b4b', borderLeftWidth: 4, borderLeftColor: '#818cf8', padding: 16, borderRadius: 16, marginBottom: 24 },
-  wisdomLabel: { fontSize: 10, color: '#818cf8', fontWeight: 'bold', marginBottom: 4 },
-  wisdomText: { color: '#f1f5f9', fontStyle: 'italic', fontSize: 14 },
-  section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 18, color: '#fff', fontWeight: 'bold', marginBottom: 16 },
-  emptyBox: { height: 150, backgroundColor: 'rgba(30, 41, 59, 0.2)', borderRadius: 32, borderStyle: 'dashed', borderWidth: 2, borderColor: '#1e293b', justifyContent: 'center', alignItems: 'center' },
-  emptyText: { color: '#94a3b8', fontSize: 18, fontWeight: 'bold', marginTop: 8 },
-  questListItem: { backgroundColor: '#1e293b', padding: 16, borderRadius: 24, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  questListIcon: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#334155', justifyContent: 'center', alignItems: 'center' },
-  questListText: { flex: 1, marginLeft: 16 },
-  questListTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  questListXP: { color: '#fbbf24', fontSize: 12, fontWeight: 'bold' },
+  heroInfo: { flex: 1, marginLeft: 12 },
+  heroName: { fontSize: 18, color: '#fff', fontWeight: 'bold' },
+  heroSubInfo: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  classBadge: { backgroundColor: 'rgba(251, 191, 36, 0.15)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  classBadgeText: { color: '#fbbf24', fontSize: 11, fontWeight: 'bold' },
+  levelInfo: { color: '#94a3b8', fontSize: 11, marginLeft: 8 },
+  xpBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(251, 191, 36, 0.15)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
+  xpBadgeText: { color: '#fbbf24', fontSize: 14, fontWeight: 'bold', marginLeft: 4 },
+  wisdomCard: { backgroundColor: 'rgba(30, 27, 75, 0.8)', borderLeftWidth: 3, borderLeftColor: '#818cf8', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, marginBottom: 16 },
+  wisdomLabel: { fontSize: 9, color: '#818cf8', fontWeight: 'bold', marginBottom: 4, letterSpacing: 1 },
+  wisdomText: { color: '#e2e8f0', fontSize: 13, lineHeight: 18 },
+  section: { marginBottom: 12 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  sectionTitle: { fontSize: 14, color: '#fff', fontWeight: 'bold', marginLeft: 8, flex: 1 },
+  sectionCount: { backgroundColor: '#fbbf24', color: '#0f172a', fontSize: 11, fontWeight: 'bold', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, overflow: 'hidden' },
+  emptyBox: { paddingVertical: 40, backgroundColor: 'rgba(30, 41, 59, 0.3)', borderRadius: 16, borderStyle: 'dashed', borderWidth: 2, borderColor: '#1e293b', justifyContent: 'center', alignItems: 'center' },
+  emptyText: { color: '#94a3b8', fontSize: 14, fontWeight: 'bold', marginTop: 8 },
+  questListItem: { backgroundColor: '#1e293b', padding: 12, borderRadius: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  questListIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#334155', justifyContent: 'center', alignItems: 'center' },
+  questListText: { flex: 1, marginLeft: 12 },
+  questListTitle: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
+  questListXP: { color: '#fbbf24', fontSize: 11, fontWeight: 'bold', marginTop: 2 },
   blessingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.9)', zIndex: 1000, justifyContent: 'center', alignItems: 'center' },
-  blessingTitle: { fontSize: 24, color: '#fff', fontWeight: 'bold', marginTop: 16 },
-  blessingSub: { fontSize: 18, color: '#fbbf24', fontWeight: 'bold' },
+  blessingTitle: { fontSize: 20, color: '#fff', fontWeight: 'bold', marginTop: 12 },
+  blessingSub: { fontSize: 16, color: '#fbbf24', fontWeight: 'bold' },
 });
+
