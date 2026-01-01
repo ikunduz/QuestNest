@@ -1,146 +1,226 @@
-
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, SafeAreaView, TouchableOpacity, Text, ScrollView, Alert } from 'react-native';
-import { User, Users, Sword, ShoppingBag, LayoutDashboard, Settings } from 'lucide-react-native';
+import { View, StyleSheet, SafeAreaView, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { User, Users, Sword, ShoppingBag, LayoutDashboard, Settings } from 'lucide-react-native';
+
+import { supabase } from './services/supabaseClient';
+import { subscribeToQuests, fetchQuests, updateQuestStatus, addQuest } from './services/questService';
 import { Role, Quest, UserState, Reward, ParentType } from './types';
-import { INITIAL_QUESTS, INITIAL_REWARDS } from './constants';
+import { INITIAL_REWARDS } from './constants';
+
+// Screens
+import { WelcomeScreen } from './views/WelcomeScreen';
+import { FamilySetupScreen } from './views/FamilySetupScreen';
+import { JoinFamilyScreen } from './views/JoinFamilyScreen';
 import { ChildDashboard } from './views/ChildDashboard';
 import { ParentDashboard } from './views/ParentDashboard';
 import { TreasureRoom } from './views/TreasureRoom';
+import { PinEntryScreen } from './views/PinEntryScreen';
 
-const App: React.FC = () => {
-  const [role, setRole] = useState<Role>('child');
+const Stack = createNativeStackNavigator();
+
+const MainApp = ({ route }: any) => {
+  const { initialUser } = route.params;
+  const [user, setUser] = useState<UserState>(initialUser);
+  const [role, setRole] = useState<Role>(initialUser.role);
   const [activeTab, setActiveTab] = useState<'map' | 'shop'>('map');
-  const [user, setUser] = useState<UserState>({
-    role: 'child',
-    xp: 85,
-    level: 2,
-    name: 'Kuzey',
-    streak: 3,
-    heroClass: 'knight'
-  });
-
-  const [quests, setQuests] = useState<Quest[]>(INITIAL_QUESTS);
+  const [quests, setQuests] = useState<Quest[]>([]);
   const [rewards] = useState<Reward[]>(INITIAL_REWARDS);
+  const [showPin, setShowPin] = useState(false);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const saved = await AsyncStorage.getItem('heroquest_data_v2');
-        if (saved) {
-          const { user: u, quests: q } = JSON.parse(saved);
-          setUser(u);
-          setQuests(q);
-        }
-      } catch (e) {
-        console.error("Failed to load data", e);
-      }
+    // İlk görevleri çek
+    loadQuests();
+
+    // Realtime dinle
+    const subscription = subscribeToQuests(user.family_id, () => {
+      loadQuests();
+    });
+
+    return () => {
+      subscription.unsubscribe();
     };
-    loadData();
   }, []);
 
-  useEffect(() => {
-    const saveData = async () => {
-      try {
-        await AsyncStorage.setItem('heroquest_data_v2', JSON.stringify({ user, quests }));
-      } catch (e) {
-        console.error("Failed to save data", e);
-      }
-    };
-    saveData();
-  }, [user, quests]);
+  const loadQuests = async () => {
+    try {
+      const data = await fetchQuests(user.family_id);
+      // Supabase formatını uygulama formatına dönüştür
+      const formattedQuests: Quest[] = data.map((q: any) => ({
+        id: q.id,
+        titleKey: q.title,
+        description: q.description || '',
+        xpReward: q.xp_reward,
+        status: q.status,
+        category: q.category,
+        createdAt: new Date(q.created_at).getTime()
+      }));
+      setQuests(formattedQuests);
+    } catch (e) {
+      console.error('Failed to load quests:', e);
+    }
+  };
 
-  const handleQuestCompletion = (id: string) => {
-    setQuests(prev => prev.map(q =>
-      q.id === id ? { ...q, status: 'pending_approval' } : q
-    ));
+  // Çocuk görevi tamamladı (onay bekliyor)
+  const handleComplete = async (id: string) => {
+    try {
+      await updateQuestStatus(id, 'pending_approval');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Ebeveyn görevi onayladı
+  const handleApprove = async (id: string) => {
+    const quest = quests.find(q => q.id === id);
+    if (!quest) return;
+
+    try {
+      await updateQuestStatus(id, 'completed');
+
+      // XP güncelle
+      const newXp = user.xp + quest.xpReward;
+      let newLevel = user.level;
+      let remainingXp = newXp;
+
+      if (newXp >= user.level * 100) {
+        remainingXp = newXp - (user.level * 100);
+        newLevel += 1;
+      }
+
+      await supabase
+        .from('users')
+        .update({ xp: remainingXp, level: newLevel })
+        .eq('id', user.id);
+
+      setUser(prev => ({ ...prev, xp: remainingXp, level: newLevel }));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Yeni görev ekle
+  const handleAddQuest = async (q: Partial<Quest>) => {
+    try {
+      await addQuest({
+        family_id: user.family_id,
+        title: q.titleKey || 'Yeni Görev',
+        description: q.description || 'Krallık emri!',
+        xp_reward: q.xpReward || 25,
+        category: q.category || 'magic',
+        status: 'active',
+        created_by: user.id
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Görev sil
+  const handleDelete = async (id: string) => {
+    try {
+      await supabase.from('quests').delete().eq('id', id);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Lütuf gönder
+  const handleSendBlessing = async (from: ParentType) => {
+    try {
+      const newXp = user.xp + 5;
+      let newLevel = user.level;
+      let remainingXp = newXp;
+
+      if (newXp >= user.level * 100) {
+        remainingXp = newXp - (user.level * 100);
+        newLevel += 1;
+      }
+
+      await supabase
+        .from('users')
+        .update({ xp: remainingXp, level: newLevel })
+        .eq('id', user.id);
+
+      setUser(prev => ({ ...prev, xp: remainingXp, level: newLevel, lastBlessingFrom: from }));
+
+      setTimeout(() => {
+        setUser(prev => ({ ...prev, lastBlessingFrom: undefined }));
+      }, 2100);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Ödül satın al
+  const handleRedeemReward = async (id: string) => {
+    const reward = rewards.find(r => r.id === id);
+    if (!reward || user.xp < reward.cost) return;
+
+    try {
+      const newXp = user.xp - reward.cost;
+      await supabase
+        .from('users')
+        .update({ xp: newXp })
+        .eq('id', user.id);
+
+      setUser(prev => ({ ...prev, xp: newXp }));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleRoleSwitch = (newRole: Role) => {
+    if (newRole === 'parent' && role === 'child') {
+      setShowPin(true);
+    } else {
+      setRole(newRole);
+    }
   };
 
   const handleUpdateUser = (updates: Partial<UserState>) => {
     setUser(prev => ({ ...prev, ...updates }));
   };
 
-  const handleApprove = (id: string) => {
-    const quest = quests.find(q => q.id === id);
-    if (!quest) return;
-
-    setQuests(prev => prev.map(q =>
-      q.id === id ? { ...q, status: 'completed' } : q
-    ));
-
-    setUser(prev => {
-      let newXP = prev.xp + quest.xpReward;
-      let newLevel = prev.level;
-      if (newXP >= prev.level * 100) {
-        newXP -= prev.level * 100;
-        newLevel += 1;
-      }
-      return { ...prev, xp: newXP, level: newLevel };
-    });
-  };
-
-  const handleSendBlessing = (from: ParentType) => {
-    setUser(prev => {
-      let newXP = prev.xp + 5;
-      let newLevel = prev.level;
-      if (newXP >= prev.level * 100) {
-        newXP -= prev.level * 100;
-        newLevel += 1;
-      }
-      return { ...prev, xp: newXP, level: newLevel, lastBlessingFrom: from };
-    });
-    setTimeout(() => {
-      setUser(prev => ({ ...prev, lastBlessingFrom: undefined }));
-    }, 2100);
-  };
-
-  const handleAddQuest = (q: Partial<Quest>) => {
-    const newQ: Quest = {
-      id: Math.random().toString(36).substr(2, 9),
-      titleKey: q.titleKey || 'Yeni Görev',
-      description: q.description || 'Krallık emri!',
-      xpReward: q.xpReward || 25,
-      category: q.category || 'magic',
-      status: 'active',
-      createdAt: Date.now()
-    };
-    setQuests(prev => [newQ, ...prev]);
-  };
-
-  const handleDeleteQuest = (id: string) => {
-    setQuests(prev => prev.filter(q => q.id !== id));
-  };
-
-  const handleRedeemReward = (id: string) => {
-    const reward = rewards.find(r => r.id === id);
-    if (!reward || user.xp < reward.cost) return;
-    setUser(prev => ({ ...prev, xp: prev.xp - reward.cost }));
-    Alert.alert("Başarılı", `${reward.name} talebin Bilge Konseyi'ne iletildi!`);
-  };
+  if (showPin) {
+    return (
+      <PinEntryScreen
+        correctPin={user.pin_hash || "0000"}
+        onSuccess={() => { setRole('parent'); setShowPin(false); }}
+        onCancel={() => setShowPin(false)}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Role Switcher */}
       <View style={styles.roleSwitcher}>
         <TouchableOpacity
-          onPress={() => setRole('child')}
+          onPress={() => handleRoleSwitch('child')}
           style={[styles.roleButton, role === 'child' && styles.roleButtonActiveChild]}
         >
           <User size={18} color={role === 'child' ? '#0f172a' : '#64748b'} />
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => setRole('parent')}
+          onPress={() => handleRoleSwitch('parent')}
           style={[styles.roleButton, role === 'parent' && styles.roleButtonActiveParent]}
         >
           <Users size={18} color={role === 'parent' ? '#ffffff' : '#64748b'} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.main}>
+      <View style={{ flex: 1 }}>
         {role === 'child' ? (
           activeTab === 'map' ? (
-            <ChildDashboard user={user} quests={quests} onComplete={handleQuestCompletion} onUpdateUser={handleUpdateUser} />
+            <ChildDashboard
+              user={user}
+              quests={quests}
+              onComplete={handleComplete}
+              onUpdateUser={handleUpdateUser}
+            />
           ) : (
             <TreasureRoom xp={user.xp} rewards={rewards} onRedeem={handleRedeemReward} />
           )
@@ -149,11 +229,11 @@ const App: React.FC = () => {
             quests={quests}
             onApprove={handleApprove}
             onAddQuest={handleAddQuest}
-            onDelete={handleDeleteQuest}
+            onDelete={handleDelete}
             onSendBlessing={handleSendBlessing}
           />
         )}
-      </ScrollView>
+      </View>
 
       <View style={styles.navbar}>
         {role === 'child' ? (
@@ -182,11 +262,57 @@ const App: React.FC = () => {
   );
 };
 
+export default function App() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [initialUser, setInitialUser] = useState<UserState | null>(null);
+
+  useEffect(() => {
+    checkUser();
+  }, []);
+
+  const checkUser = async () => {
+    try {
+      const savedUser = await AsyncStorage.getItem('questnest_user');
+      if (savedUser) {
+        setInitialUser(JSON.parse(savedUser));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#fbbf24" />
+      </View>
+    );
+  }
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {!initialUser ? (
+          <>
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+            <Stack.Screen name="FamilySetup" component={FamilySetupScreen} />
+            <Stack.Screen name="JoinFamily" component={JoinFamilyScreen} />
+          </>
+        ) : null}
+        <Stack.Screen
+          name="Main"
+          component={MainApp}
+          initialParams={{ initialUser: initialUser }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0f172a',
-  },
+  container: { flex: 1, backgroundColor: '#0f172a' },
   roleSwitcher: {
     position: 'absolute',
     top: 50,
@@ -199,24 +325,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#334155',
   },
-  roleButton: {
-    padding: 8,
-    borderRadius: 8,
-  },
-  roleButtonActiveChild: {
-    backgroundColor: '#f59e0b',
-  },
-  roleButtonActiveParent: {
-    backgroundColor: '#6366f1',
-  },
-  main: {
-    paddingBottom: 100,
-  },
+  roleButton: { padding: 8, borderRadius: 8 },
+  roleButtonActiveChild: { backgroundColor: '#f59e0b' },
+  roleButtonActiveParent: { backgroundColor: '#6366f1' },
   navbar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     height: 80,
     backgroundColor: '#0f172a',
     borderTopWidth: 4,
@@ -228,21 +340,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#64748b',
-    textTransform: 'uppercase',
-    marginTop: 4,
-  },
-  navTextActive: {
-    color: '#fbbf24',
-  },
+  navItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  navText: { fontSize: 10, fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', marginTop: 4 },
+  navTextActive: { color: '#fbbf24' },
 });
-
-export default App;

@@ -1,14 +1,15 @@
 
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
 
 interface GameButtonProps {
   children: React.ReactNode;
-  onPress?: () => void; // Changed from onClick to onPress
-  onClick?: () => void; // Support both for compatibility during transition
+  onPress?: () => void;
+  onClick?: () => void;
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   style?: ViewStyle;
   disabled?: boolean;
+  loading?: boolean;
 }
 
 export const GameButton: React.FC<GameButtonProps> = ({
@@ -17,27 +18,32 @@ export const GameButton: React.FC<GameButtonProps> = ({
   onClick,
   variant = 'primary',
   style,
-  disabled = false
+  disabled = false,
+  loading = false
 }) => {
   const handlePress = onPress || onClick;
 
   return (
     <TouchableOpacity
       onPress={handlePress}
-      disabled={disabled}
+      disabled={disabled || loading}
       style={[
         styles.btn,
         styles[variant],
-        disabled && styles.disabled,
+        (disabled || loading) && styles.disabled,
         style
       ]}
     >
-      <Text style={[
-        styles.text,
-        variant === 'primary' ? styles.textPrimary : styles.textSecondary
-      ]}>
-        {children}
-      </Text>
+      {loading ? (
+        <ActivityIndicator color={variant === 'primary' ? '#0f172a' : '#ffffff'} />
+      ) : (
+        <Text style={[
+          styles.text,
+          variant === 'primary' ? styles.textPrimary : styles.textSecondary
+        ]}>
+          {children}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 };

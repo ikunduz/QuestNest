@@ -94,8 +94,8 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ quests, onAppr
         ) : (
           pendingQuests.map(quest => (
             <View key={quest.id} style={styles.pendingCard}>
-              <View style={[styles.pendingIcon, { backgroundColor: CATEGORY_METADATA[quest.category].color.replace('bg-', '').replace('-500', '') }]}>
-                {React.cloneElement(CATEGORY_METADATA[quest.category].icon as React.ReactElement, { color: '#fff' })}
+              <View style={[styles.pendingIcon, { backgroundColor: CATEGORY_METADATA[quest.category].color }]}>
+                {React.cloneElement(CATEGORY_METADATA[quest.category].icon as React.ReactElement, { color: '#fff' } as any)}
               </View>
               <View style={styles.pendingInfo}>
                 <Text style={styles.pendingTitle}>{quest.titleKey}</Text>
@@ -112,7 +112,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ quests, onAppr
         {activeQuests.map(quest => (
           <View key={quest.id} style={styles.activeQuestItem}>
             <View style={styles.activeQuestInfo}>
-              {React.cloneElement(CATEGORY_METADATA[quest.category].icon as React.ReactElement, { size: 16, color: '#64748b' })}
+              {React.cloneElement(CATEGORY_METADATA[quest.category].icon as React.ReactElement, { size: 16, color: '#64748b' } as any)}
               <Text style={styles.activeQuestTitle}>{quest.titleKey}</Text>
             </View>
             <TouchableOpacity onPress={() => onDelete(quest.id)}>

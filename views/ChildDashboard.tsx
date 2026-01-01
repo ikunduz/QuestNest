@@ -102,8 +102,8 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
         </View>
 
         <View style={styles.questCard}>
-          <View style={[styles.questIconBox, { backgroundColor: CATEGORY_METADATA[selectedQuest.category].color.replace('bg-', '').replace('-500', '') }]}>
-            {React.cloneElement(CATEGORY_METADATA[selectedQuest.category].icon as React.ReactElement, { size: 40, color: '#fff' })}
+          <View style={[styles.questIconBox, { backgroundColor: CATEGORY_METADATA[selectedQuest.category].color }]}>
+            {React.cloneElement(CATEGORY_METADATA[selectedQuest.category].icon as React.ReactElement, { size: 40, color: '#fff' } as any)}
           </View>
           <Text style={styles.questTitle}>{selectedQuest.titleKey}</Text>
           <Text style={styles.questDesc}>"{selectedQuest.description}"</Text>

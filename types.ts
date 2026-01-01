@@ -27,12 +27,22 @@ export interface Reward {
 }
 
 export interface UserState {
+  id: string;
+  family_id: string;
   role: Role;
   xp: number;
   level: number;
   name: string;
   streak: number;
-  avatar?: string; // Base64 or class name
+  avatar?: string;
   heroClass?: 'knight' | 'mage' | 'ranger';
   lastBlessingFrom?: ParentType;
+  pin_hash?: string;
+  parent_type?: ParentType;
+}
+
+export interface Family {
+  id: string;
+  name: string;
+  family_code: string;
 }

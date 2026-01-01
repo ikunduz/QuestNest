@@ -16,22 +16,22 @@ import { Quest, QuestCategory, Reward } from './types';
 export const CATEGORY_METADATA: Record<QuestCategory, { icon: React.ReactNode, color: string, label: string }> = {
   care: {
     icon: <Heart size={24} color="#fb7185" />,
-    color: 'bg-rose-500',
+    color: '#fb7185',
     label: 'Kişisel Bakım'
   },
   study: {
     icon: <BookOpen size={24} color="#60a5fa" />,
-    color: 'bg-blue-500',
+    color: '#3b82f6',
     label: 'Bilgelik Yolu'
   },
   clean: {
     icon: <Trash2 size={24} color="#10b981" />,
-    color: 'bg-emerald-500',
+    color: '#10b981',
     label: 'Krallık Temizliği'
   },
   magic: {
     icon: <Sparkles size={24} color="#f59e0b" />,
-    color: 'bg-amber-500',
+    color: '#f59e0b',
     label: 'Özel Görev'
   },
 };
