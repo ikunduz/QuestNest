@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Play, Pause, UserCircle } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { Play, Pause, UserCircle, Trash2 } from 'lucide-react-native';
 
 interface NoteCardProps {
     note: {
@@ -17,12 +17,25 @@ interface NoteCardProps {
     };
     onPlay?: (audioUrl: string) => void;
     onMarkRead?: (id: string) => void;
+    onDelete?: (id: string) => void;
+    currentUserId?: string;
 }
 
-export const NoteCard: React.FC<NoteCardProps> = ({ note, onPlay, onMarkRead }) => {
+export const NoteCard: React.FC<NoteCardProps> = ({ note, onPlay, onMarkRead, onDelete, currentUserId }) => {
     const formatTime = (dateStr: string) => {
         const date = new Date(dateStr);
         return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const handleDelete = () => {
+        Alert.alert(
+            'Notu Sil',
+            'Bu notu silmek istediğinize emin misiniz?',
+            [
+                { text: 'İptal', style: 'cancel' },
+                { text: 'Sil', style: 'destructive', onPress: () => onDelete?.(note.id) }
+            ]
+        );
     };
 
     return (
@@ -39,6 +52,9 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onPlay, onMarkRead }) 
                     <Text style={styles.time}>{formatTime(note.created_at)}</Text>
                 </View>
                 {!note.is_read && <View style={styles.badge} />}
+                <TouchableOpacity onPress={handleDelete} style={styles.deleteBtn}>
+                    <Trash2 color="#f43f5e" size={16} />
+                </TouchableOpacity>
             </View>
 
             {note.note_type === 'text' ? (
@@ -107,5 +123,9 @@ const styles = StyleSheet.create({
         color: '#fbbf24',
         marginLeft: 8,
         fontWeight: 'bold',
+    },
+    deleteBtn: {
+        padding: 8,
+        marginLeft: 8,
     },
 });

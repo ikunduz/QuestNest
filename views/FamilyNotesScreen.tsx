@@ -5,7 +5,7 @@ import { Audio } from 'expo-av';
 import { GameButton } from '../components/GameButton';
 import { NoteCard } from '../components/NoteCard';
 import { VoiceRecorder } from '../components/VoiceRecorder';
-import { fetchNotes, sendNote, markNoteAsRead, subscribeToNotes } from '../services/notesService';
+import { fetchNotes, sendNote, markNoteAsRead, subscribeToNotes, deleteNote } from '../services/notesService';
 
 interface FamilyNotesScreenProps {
     familyId: string;
@@ -135,6 +135,17 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
         }
     };
 
+    const handleDeleteNote = async (noteId: string) => {
+        try {
+            await deleteNote(noteId);
+            setNotes(prev => prev.filter(n => n.id !== noteId));
+            Alert.alert('✅', 'Not silindi!');
+        } catch (e) {
+            console.error(e);
+            Alert.alert('Hata', 'Not silinemedi.');
+        }
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -161,6 +172,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
                             note={note}
                             onMarkRead={handleMarkRead}
                             onPlay={handlePlayAudio}
+                            onDelete={handleDeleteNote}
                         />
                     ))
                 )}

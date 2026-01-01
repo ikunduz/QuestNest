@@ -41,16 +41,26 @@ export const subscribeToNotes = (familyId: string, userId: string, callback: (pa
         .channel('public:family_notes')
         .on('postgres_changes',
             {
-                event: 'INSERT',
+                event: '*',
                 schema: 'public',
                 table: 'family_notes',
                 filter: `family_id=eq.${familyId}`
             },
             (payload: any) => {
-                if (!payload.new.to_user || payload.new.to_user === userId) {
+                if (!payload.new?.to_user || payload.new?.to_user === userId) {
                     callback(payload);
                 }
             }
         )
         .subscribe();
+};
+
+// Not sil
+export const deleteNote = async (noteId: string) => {
+    const { error } = await supabase
+        .from('family_notes')
+        .delete()
+        .eq('id', noteId);
+
+    if (error) throw error;
 };
