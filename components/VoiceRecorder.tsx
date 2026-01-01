@@ -1,12 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Mic, Square, Send } from 'lucide-react-native';
-// Not: expo-av kurulu olmalı
-// import { Audio } from 'expo-av';
+import { Mic, Square, Send, X, Play } from 'lucide-react-native';
+import { Audio } from 'expo-av';
 
 interface VoiceRecorderProps {
     onRecordComplete: (audioUri: string) => void;
-    maxDuration?: number; // saniye
+    maxDuration?: number;
 }
 
 export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
@@ -16,26 +15,38 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     const [isRecording, setIsRecording] = useState(false);
     const [recordedUri, setRecordedUri] = useState<string | null>(null);
     const [duration, setDuration] = useState(0);
-    // const recordingRef = useRef<Audio.Recording | null>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+
+    const recordingRef = useRef<Audio.Recording | null>(null);
+    const soundRef = useRef<Audio.Sound | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     const startRecording = async () => {
         try {
-            // Gerçek implementasyon için expo-av kullanılmalı
-            // const { granted } = await Audio.requestPermissionsAsync();
-            // if (!granted) {
-            //   Alert.alert('İzin Gerekli', 'Ses kaydı için mikrofon izni gerekli.');
-            //   return;
-            // }
-            // await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-            // const recording = new Audio.Recording();
-            // await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-            // await recording.startAsync();
-            // recordingRef.current = recording;
+            // İzin iste
+            const { granted } = await Audio.requestPermissionsAsync();
+            if (!granted) {
+                Alert.alert('İzin Gerekli', 'Ses kaydı için mikrofon izni gerekli.');
+                return;
+            }
+
+            // Audio modunu ayarla
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: true,
+                playsInSilentModeIOS: true,
+            });
+
+            // Yeni kayıt başlat
+            const recording = new Audio.Recording();
+            await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+            await recording.startAsync();
+            recordingRef.current = recording;
 
             setIsRecording(true);
             setDuration(0);
+            setRecordedUri(null);
 
+            // Timer başlat
             timerRef.current = setInterval(() => {
                 setDuration(prev => {
                     if (prev >= maxDuration - 1) {
@@ -46,8 +57,6 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
                 });
             }, 1000);
 
-            // Simülasyon için
-            Alert.alert('Bilgi', 'Ses kaydı simülasyonu başlatıldı. Gerçek uygulama için expo-av kurulmalı.');
         } catch (error) {
             console.error('Recording error:', error);
             Alert.alert('Hata', 'Ses kaydı başlatılamadı.');
@@ -57,18 +66,51 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     const stopRecording = async () => {
         if (timerRef.current) {
             clearInterval(timerRef.current);
+            timerRef.current = null;
         }
+
         setIsRecording(false);
 
-        // Gerçek implementasyon
-        // if (recordingRef.current) {
-        //   await recordingRef.current.stopAndUnloadAsync();
-        //   const uri = recordingRef.current.getURI();
-        //   setRecordedUri(uri);
-        // }
+        if (recordingRef.current) {
+            try {
+                await recordingRef.current.stopAndUnloadAsync();
+                const uri = recordingRef.current.getURI();
+                setRecordedUri(uri);
+                recordingRef.current = null;
 
-        // Simülasyon
-        setRecordedUri('simulated-audio-uri');
+                // Reset audio mode
+                await Audio.setAudioModeAsync({
+                    allowsRecordingIOS: false,
+                });
+            } catch (error) {
+                console.error('Stop recording error:', error);
+            }
+        }
+    };
+
+    const playPreview = async () => {
+        if (!recordedUri) return;
+
+        try {
+            if (soundRef.current) {
+                await soundRef.current.unloadAsync();
+            }
+
+            const { sound } = await Audio.Sound.createAsync({ uri: recordedUri });
+            soundRef.current = sound;
+
+            setIsPlaying(true);
+            await sound.playAsync();
+
+            sound.setOnPlaybackStatusUpdate((status) => {
+                if (status.isLoaded && status.didJustFinish) {
+                    setIsPlaying(false);
+                }
+            });
+        } catch (error) {
+            console.error('Playback error:', error);
+            setIsPlaying(false);
+        }
     };
 
     const handleSend = () => {
@@ -77,6 +119,11 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
             setRecordedUri(null);
             setDuration(0);
         }
+    };
+
+    const handleCancel = () => {
+        setRecordedUri(null);
+        setDuration(0);
     };
 
     const formatDuration = (sec: number) => {
@@ -89,9 +136,17 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         <View style={styles.container}>
             {recordedUri ? (
                 <View style={styles.recordedContainer}>
-                    <Text style={styles.durationText}>{formatDuration(duration)} kayıt</Text>
+                    <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                        <X color="#f43f5e" size={20} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.playButton} onPress={playPreview}>
+                        <Play color="#fff" size={16} />
+                        <Text style={styles.durationText}>{formatDuration(duration)}</Text>
+                    </TouchableOpacity>
+
                     <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-                        <Send color="#0f172a" size={20} />
+                        <Send color="#0f172a" size={18} />
                         <Text style={styles.sendButtonText}>GÖNDER</Text>
                     </TouchableOpacity>
                 </View>
@@ -108,7 +163,13 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
                         )}
                     </TouchableOpacity>
                     {isRecording && (
-                        <Text style={styles.durationText}>{formatDuration(duration)} / {maxDuration}s</Text>
+                        <View style={styles.recordingInfo}>
+                            <View style={styles.recordingDot} />
+                            <Text style={styles.durationText}>{formatDuration(duration)} / {maxDuration}s</Text>
+                        </View>
+                    )}
+                    {!isRecording && (
+                        <Text style={styles.hintText}>Kayıt için bas</Text>
                     )}
                 </View>
             )}
@@ -134,16 +195,44 @@ const styles = StyleSheet.create({
     recording: {
         backgroundColor: '#e11d48',
     },
+    recordingInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 12,
+    },
+    recordingDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#e11d48',
+        marginRight: 8,
+    },
     durationText: {
         color: '#94a3b8',
-        marginTop: 8,
         fontSize: 14,
         fontWeight: 'bold',
+    },
+    hintText: {
+        color: '#64748b',
+        fontSize: 12,
+        marginTop: 8,
     },
     recordedContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+    },
+    cancelButton: {
+        padding: 10,
+    },
+    playButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#334155',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 16,
+        gap: 8,
     },
     sendButton: {
         flexDirection: 'row',

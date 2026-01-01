@@ -172,6 +172,11 @@ const MainApp = ({ route, navigation }: any) => {
 
   // Aktif tab içeriğini render et
   const renderContent = () => {
+    // Notes her iki modda da çalışsın
+    if (activeTab === 'notes') {
+      return <FamilyNotesScreen familyId={user.family_id} userId={user.id} userName={user.name} onBack={() => setActiveTab('quests')} />;
+    }
+
     if (role === 'parent') {
       return (
         <ParentDashboard
@@ -193,8 +198,6 @@ const MainApp = ({ route, navigation }: any) => {
         return <CastleScreen userId={user.id} theme="hero" />;
       case 'treasure':
         return <TreasureRoom xp={user.xp} rewards={rewards} onRedeem={handleRedeemReward} />;
-      case 'notes':
-        return <FamilyNotesScreen familyId={user.family_id} userId={user.id} userName={user.name} onBack={() => setActiveTab('quests')} />;
       default:
         return <ChildDashboard user={user} quests={quests} onComplete={handleComplete} onUpdateUser={handleUpdateUser} />;
     }
