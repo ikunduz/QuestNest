@@ -67,7 +67,14 @@ const MainApp = ({ route, navigation }: any) => {
   };
 
   const handleComplete = async (id: string) => {
-    try { await updateQuestStatus(id, 'pending_approval'); } catch (e) { console.error(e); }
+    try {
+      await updateQuestStatus(id, 'pending_approval');
+      Alert.alert('🎯', 'Görev bildirildi! Ebeveyn onayı bekleniyor.');
+      await loadQuests();
+    } catch (e: any) {
+      Alert.alert('Hata', e.message || 'Görev bildirilemedi.');
+      console.error(e);
+    }
   };
 
   const handleApprove = async (id: string) => {
