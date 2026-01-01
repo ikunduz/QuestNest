@@ -1,0 +1,95 @@
+{
+    "app": {
+        "name": "QuestNest",
+        "tagline": "Küçük Kahramanların Büyüdüğü Yer"
+    },
+    "tabs": {
+        "quests": "Görevler",
+        "treasure": "Hazine",
+        "notes": "Notlar",
+        "settings": "Ayarlar",
+        "creature": "Yaratık",
+        "castle": "Kale"
+    },
+    "child": {
+        "level": "Seviye",
+        "wisdom": "Bilgenin Öğüdü",
+        "activeQuests": "Aktif Görevler",
+        "victory": "Zafer!",
+        "reportQuest": "Görevi Bildir",
+        "noQuests": "Aktif görev yok",
+        "waitingApproval": "Onay bekleniyor"
+    },
+    "parent": {
+        "dashboard": "Bilge Kumandası",
+        "queenControl": "Kraliçe Denetimi",
+        "kingControl": "Kral Denetimi",
+        "addQuest": "Yeni Emir",
+        "approve": "Onayla",
+        "reject": "Reddet",
+        "sendBlessing": "Lütuf Gönder",
+        "pendingQuests": "Onay Bekleyenler",
+        "activeQuests": "Aktif Görevler",
+        "completedQuests": "Tamamlananlar"
+    },
+    "categories": {
+        "care": "Kişisel Bakım",
+        "study": "Bilgelik Yolu",
+        "clean": "Krallık Temizliği",
+        "magic": "Özel Görev"
+    },
+    "creature": {
+        "feed": "Besle",
+        "play": "Oyna",
+        "talk": "Konuş",
+        "happiness": "Mutluluk",
+        "hunger": "Tokluk",
+        "energy": "Enerji",
+        "notHungry": "Yaratığın henüz aç değil!",
+        "needsRest": "Yaratığın dinlenmeli!",
+        "enjoyedTalk": "Yaratığın sohbetten çok keyif aldı!"
+    },
+    "castle": {
+        "unlock": "Aç",
+        "notEnoughGold": "Yeterli altın yok",
+        "roomUnlocked": "Oda açıldı!",
+        "congratulations": "Tebrikler!"
+    },
+    "notes": {
+        "title": "Aile Notları",
+        "noNotes": "Henüz not yok",
+        "sendFirst": "Ailene ilk notu gönder!",
+        "placeholder": "Bir not bırak...",
+        "listenVoice": "Sesli Notu Dinle"
+    },
+    "auth": {
+        "welcome": "Hoş Geldin",
+        "createFamily": "Aile Oluştur",
+        "joinFamily": "Aileye Katıl",
+        "familyName": "Aile Adı",
+        "familyCode": "Aile Kodu",
+        "yourName": "Adın",
+        "childName": "Çocuğun Adı",
+        "pin": "Ebeveyn PIN",
+        "pinRequired": "4 haneli PIN girin",
+        "wrongPin": "Hatalı PIN",
+        "findAndJoin": "Bul ve Katıl"
+    },
+    "themes": {
+        "hero": "Kahraman",
+        "fairy": "Peri",
+        "magical": "Büyülü",
+        "ocean": "Deniz",
+        "selectTheme": "Krallığını Seç!"
+    },
+    "common": {
+        "save": "Kaydet",
+        "cancel": "İptal",
+        "confirm": "Onayla",
+        "loading": "Yükleniyor...",
+        "error": "Hata",
+        "success": "Başarılı",
+        "xp": "XP",
+        "gold": "Altın"
+    }
+}

@@ -1,0 +1,95 @@
+{
+    "app": {
+        "name": "QuestNest",
+        "tagline": "Where Little Heroes Grow"
+    },
+    "tabs": {
+        "quests": "Quests",
+        "treasure": "Treasure",
+        "notes": "Notes",
+        "settings": "Settings",
+        "creature": "Companion",
+        "castle": "Castle"
+    },
+    "child": {
+        "level": "Level",
+        "wisdom": "Wisdom of the Sage",
+        "activeQuests": "Active Quests",
+        "victory": "Victory!",
+        "reportQuest": "Report Quest",
+        "noQuests": "No active quests",
+        "waitingApproval": "Waiting for approval"
+    },
+    "parent": {
+        "dashboard": "Sage Command",
+        "queenControl": "Queen's Control",
+        "kingControl": "King's Control",
+        "addQuest": "New Quest",
+        "approve": "Approve",
+        "reject": "Reject",
+        "sendBlessing": "Send Blessing",
+        "pendingQuests": "Pending Approval",
+        "activeQuests": "Active Quests",
+        "completedQuests": "Completed Quests"
+    },
+    "categories": {
+        "care": "Self Care",
+        "study": "Study",
+        "clean": "Cleaning",
+        "magic": "Special Quest"
+    },
+    "creature": {
+        "feed": "Feed",
+        "play": "Play",
+        "talk": "Talk",
+        "happiness": "Happiness",
+        "hunger": "Hunger",
+        "energy": "Energy",
+        "notHungry": "Your creature is not hungry yet!",
+        "needsRest": "Your creature needs to rest!",
+        "enjoyedTalk": "Your creature enjoyed the conversation!"
+    },
+    "castle": {
+        "unlock": "Unlock",
+        "notEnoughGold": "Not enough gold",
+        "roomUnlocked": "Room unlocked!",
+        "congratulations": "Congratulations!"
+    },
+    "notes": {
+        "title": "Family Notes",
+        "noNotes": "No notes yet",
+        "sendFirst": "Send the first note to your family!",
+        "placeholder": "Leave a note...",
+        "listenVoice": "Listen to Voice Note"
+    },
+    "auth": {
+        "welcome": "Welcome",
+        "createFamily": "Create Family",
+        "joinFamily": "Join Family",
+        "familyName": "Family Name",
+        "familyCode": "Family Code",
+        "yourName": "Your Name",
+        "childName": "Child's Name",
+        "pin": "Parent PIN",
+        "pinRequired": "Enter 4-digit PIN",
+        "wrongPin": "Wrong PIN",
+        "findAndJoin": "Find & Join"
+    },
+    "themes": {
+        "hero": "Hero",
+        "fairy": "Fairy",
+        "magical": "Magical",
+        "ocean": "Ocean",
+        "selectTheme": "Choose Your Kingdom!"
+    },
+    "common": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "loading": "Loading...",
+        "error": "Error",
+        "success": "Success",
+        "xp": "XP",
+        "gold": "Gold"
+    }
+}
