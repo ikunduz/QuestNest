@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, SafeAreaView, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, SafeAreaView, TouchableOpacity, Text, ActivityIndicator, Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -84,7 +84,12 @@ const MainApp = ({ route, navigation }: any) => {
       }
       await supabase.from('users').update({ xp: remainingXp, level: newLevel }).eq('id', user.id);
       setUser(prev => ({ ...prev, xp: remainingXp, level: newLevel }));
-    } catch (e) { console.error(e); }
+      Alert.alert('🎉', 'Görev onaylandı! Kahraman ödüllendirildi.');
+      await loadQuests();
+    } catch (e: any) {
+      Alert.alert('Hata', e.message || 'Görev onaylanamadı. Supabase RLS politikalarını kontrol et.');
+      console.error(e);
+    }
   };
 
   const handleAddQuest = async (q: Partial<Quest>) => {
@@ -98,11 +103,22 @@ const MainApp = ({ route, navigation }: any) => {
         status: 'active',
         created_by: user.id
       });
-    } catch (e) { console.error(e); }
+      Alert.alert('✅', 'Görev eklendi!');
+      await loadQuests();
+    } catch (e: any) {
+      Alert.alert('Hata', e.message || 'Görev eklenemedi. Supabase RLS politikalarını kontrol et.');
+      console.error(e);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    try { await supabase.from('quests').delete().eq('id', id); } catch (e) { console.error(e); }
+    try {
+      await supabase.from('quests').delete().eq('id', id);
+      await loadQuests();
+    } catch (e: any) {
+      Alert.alert('Hata', e.message || 'Görev silinemedi.');
+      console.error(e);
+    }
   };
 
   const handleSendBlessing = async (from: ParentType) => {
