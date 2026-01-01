@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Animated, Easing } from 'react-native';
 import {
   Shield, Sparkles, Camera, CheckCircle2, ChevronRight, Trophy, Sword,
   UserCircle, Wand2, Target, Heart, Zap
 } from 'lucide-react-native';
 import { XPBar } from '../components/XPBar';
 import { GameButton } from '../components/GameButton';
+import { FloatingHearts } from '../components/XPGainAnimation';
+import { ConfettiEffect } from '../components/ConfettiEffect';
 import { CATEGORY_METADATA } from '../constants';
 import { Quest, UserState } from '../types';
 import { getWisdomMessage } from '../services/geminiService';
@@ -125,13 +127,8 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
 
   return (
     <View style={styles.container}>
-      {isBlessingActive && (
-        <View style={styles.blessingOverlay}>
-          <Zap size={80} color="#fbbf24" />
-          <Text style={styles.blessingTitle}>{user.lastBlessingFrom === 'mom' ? 'ANNELİK' : 'BABALIK'} LÜTFU!</Text>
-          <Text style={styles.blessingSub}>+5 XP KAZANILDI</Text>
-        </View>
-      )}
+      {/* Animated Blessing Hearts */}
+      <FloatingHearts visible={isBlessingActive} from={user.lastBlessingFrom} />
 
       {/* Hero Stats */}
       <View style={styles.statsCard}>
