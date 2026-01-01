@@ -1,0 +1,7 @@
+{
+  "name": "HeroQuest: Görev Operasyonu",
+  "description": "A gamified RPG quest system for children to track daily responsibilities and earn rewards through an epic fantasy interface.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
