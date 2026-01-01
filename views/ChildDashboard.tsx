@@ -9,6 +9,7 @@ import { XPBar } from '../components/XPBar';
 import { GameButton } from '../components/GameButton';
 import { FloatingHearts } from '../components/XPGainAnimation';
 import { ConfettiEffect } from '../components/ConfettiEffect';
+import { AvatarSelector } from '../components/AvatarSelector';
 import { CATEGORY_METADATA } from '../constants';
 import { Quest, UserState } from '../types';
 import { getWisdomMessage } from '../services/geminiService';
@@ -49,8 +50,40 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
   const completedQuests = quests.filter(q => q.status === 'completed').slice(0, 3);
 
   const startCamera = async () => {
-    Alert.alert("Bilgi", "Kamera özelliği mobil uygulama için güncelleniyor.");
+    // Avatar seçici'ye geçiş yapılıyor
+    setShowAvatarSelector(true);
   };
+
+  const [showAvatarSelector, setShowAvatarSelector] = useState(false);
+
+  const handleAvatarSelect = (avatarId: string, photoUrl?: string) => {
+    if (photoUrl) {
+      onUpdateUser({ avatar: photoUrl });
+    } else if (avatarId) {
+      // Avatar emoji'sini kaydet (veya avatar id'yi)
+      onUpdateUser({ avatar: avatarId });
+    }
+    setShowAvatarSelector(false);
+    Alert.alert('✅', 'Avatar güncellendi!');
+  };
+
+  if (showAvatarSelector) {
+    return (
+      <ScrollView style={styles.profileContainer}>
+        <View style={styles.header}>
+          <Text style={styles.title}>AVATAR SEÇ</Text>
+          <GameButton variant="ghost" onPress={() => setShowAvatarSelector(false)}>
+            <ChevronRight color="#64748b" style={{ transform: [{ rotate: '180deg' }] }} />
+          </GameButton>
+        </View>
+        <AvatarSelector
+          currentAvatar={user.avatar}
+          userRole="child"
+          onSelect={handleAvatarSelect}
+        />
+      </ScrollView>
+    );
+  }
 
   if (showProfile) {
     return (
@@ -70,7 +103,7 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
               <UserCircle color="#fbbf24" size={64} />
             )}
           </View>
-          <GameButton onPress={startCamera} style={{ width: '100%' }}>PORTRE DEĞİŞTİR</GameButton>
+          <GameButton onPress={startCamera} style={{ width: '100%' }}>AVATAR DEĞİŞTİR</GameButton>
         </View>
 
         <View style={styles.classGrid}>
