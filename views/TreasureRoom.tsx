@@ -80,7 +80,7 @@ export const TreasureRoom: React.FC<TreasureRoomProps> = ({ xp, rewards, onRedee
           <Text style={styles.balanceLabel}>SERVETİN</Text>
           <BlurView intensity={30} tint="light" style={styles.balanceCard}>
             <View style={styles.balanceItem}>
-              <Text style={styles.balanceValue}>{xp * 5}</Text>
+              <Text style={styles.balanceValue}>{xp}</Text>
               <View style={styles.balanceType}>
                 <Coins size={16} color="#fbbf24" fill="#fbbf24" />
                 <Text style={styles.balanceTypeName}>ALTIN</Text>

@@ -25,7 +25,15 @@ import { CastleScreen } from './views/CastleScreen';
 
 const Stack = createNativeStackNavigator();
 
-type TabType = 'quests' | 'creature' | 'castle' | 'treasure' | 'notes';
+import { GameHub } from './views/GameHub';
+// ... existing imports
+
+type TabType = 'quests' | 'game' | 'treasure' | 'notes';
+
+
+
+
+// ... rest of App component
 
 const MainApp = ({ route, navigation }: any) => {
   const { initialUser } = route.params || {};
@@ -173,7 +181,7 @@ const MainApp = ({ route, navigation }: any) => {
   };
 
   const handleRedeemReward = (reward: Reward) => {
-    if (user.xp * 5 < reward.cost) {
+    if (user.xp < reward.cost) {
       Alert.alert('Yetersiz Altın', 'Bu ödülü almak için daha fazla altına ihtiyacın var!');
       return;
     }
@@ -204,6 +212,7 @@ const MainApp = ({ route, navigation }: any) => {
           onAddQuest={handleAddQuest}
           onDelete={handleDelete}
           onSendBlessing={handleSendBlessing}
+          onExit={() => handleRoleSwitch('child')}
         />
       );
     }
@@ -211,10 +220,15 @@ const MainApp = ({ route, navigation }: any) => {
     switch (activeTab) {
       case 'quests':
         return <ChildDashboard user={user} quests={quests} onComplete={handleComplete} onUpdateUser={handleUpdateUser} />;
-      case 'creature':
-        return <CreatureScreen user={user} onUpdateUser={handleUpdateUser} pet={pet} onUpdatePet={handleUpdatePet} />;
-      case 'castle':
-        return <CastleScreen userId={user.id} theme="hero" />;
+      case 'game':
+        return (
+          <GameHub
+            user={user}
+            pet={pet}
+            onUpdateUser={handleUpdateUser}
+            onUpdatePet={handleUpdatePet}
+          />
+        );
       case 'treasure':
         return <TreasureRoom xp={user.xp} rewards={rewards} onRedeem={(reward) => handleRedeemReward(reward)} />;
       default:
@@ -232,13 +246,12 @@ const MainApp = ({ route, navigation }: any) => {
             <Sword size={22} color={activeTab === 'quests' ? '#fbbf24' : '#64748b'} />
             <Text style={[styles.navText, activeTab === 'quests' && { color: '#fbbf24' }]}>GÖREVLER</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setActiveTab('creature')} style={styles.navItem}>
-            <PawPrint size={22} color={activeTab === 'creature' ? '#fbbf24' : '#64748b'} />
-            <Text style={[styles.navText, activeTab === 'creature' && { color: '#fbbf24' }]}>YARATIK</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setActiveTab('castle')} style={styles.navItem}>
-            <Castle size={22} color={activeTab === 'castle' ? '#fbbf24' : '#64748b'} />
-            <Text style={[styles.navText, activeTab === 'castle' && { color: '#fbbf24' }]}>KALE</Text>
+          <TouchableOpacity onPress={() => setActiveTab('game')} style={styles.navItem}>
+            <View style={{ flexDirection: 'row' }}>
+              <PawPrint size={18} color={activeTab === 'game' ? '#fbbf24' : '#64748b'} style={{ marginRight: -4 }} />
+              <Castle size={18} color={activeTab === 'game' ? '#fbbf24' : '#64748b'} />
+            </View>
+            <Text style={[styles.navText, activeTab === 'game' && { color: '#fbbf24' }]}>OYUN</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setActiveTab('treasure')} style={styles.navItem}>
             <ShoppingBag size={22} color={activeTab === 'treasure' ? '#fbbf24' : '#64748b'} />
@@ -248,17 +261,14 @@ const MainApp = ({ route, navigation }: any) => {
             <MessageCircle size={22} color={activeTab === 'notes' ? '#fbbf24' : '#64748b'} />
             <Text style={[styles.navText, activeTab === 'notes' && { color: '#fbbf24' }]}>NOTLAR</Text>
           </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleRoleSwitch('parent')} style={styles.navItem}>
+            <Users size={22} color='#64748b' />
+            <Text style={styles.navText}>EBEVEYN</Text>
+          </TouchableOpacity>
         </View>
       )}
 
-      <View style={styles.roleSwitcher}>
-        <TouchableOpacity onPress={() => handleRoleSwitch('child')} style={[styles.roleButton, role === 'child' && styles.roleButtonActiveChild]}>
-          <User size={16} color={role === 'child' ? '#0f172a' : '#94a3b8'} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleRoleSwitch('parent')} style={[styles.roleButton, role === 'parent' && styles.roleButtonActiveParent]}>
-          <Users size={16} color={role === 'parent' ? '#ffffff' : '#94a3b8'} />
-        </TouchableOpacity>
-      </View>
+
     </SafeAreaView>
   );
 };

@@ -9,8 +9,8 @@ import {
 import { AvatarSelector } from '../components/AvatarSelector';
 import { CATEGORY_METADATA } from '../constants';
 import { Quest, UserState } from '../types';
-import { getWisdomMessage } from '../services/geminiService';
 import { getAvatarEmoji } from '../constants/avatars';
+
 
 const { width } = Dimensions.get('window');
 
@@ -22,14 +22,9 @@ interface ChildDashboardProps {
 }
 
 export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, onComplete, onUpdateUser }) => {
-  const [wisdom, setWisdom] = useState<string>("Yükleniyor...");
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
   const [showAvatarSelector, setShowAvatarSelector] = useState(false);
   const xpAnim = React.useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    getWisdomMessage(user.name, user.level).then(setWisdom);
-  }, [user.name, user.level]);
 
   useEffect(() => {
     // Animate XP Bar on mount or update
@@ -150,20 +145,12 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
                   <Text style={styles.statEmoji}>🪙</Text>
                 </LinearGradient>
                 <View>
-                  <Text style={styles.statLabelHeader}>ALTIN</Text>
-                  <Text style={styles.statValueHeader}>{user.xp * 5}</Text>
+                  <Text style={styles.statLabelHeader}>TOPLAM ALTIN</Text>
+                  <Text style={styles.statValueHeader}>{user.xp}</Text>
                 </View>
               </View>
 
-              <View style={styles.statItem}>
-                <TouchableOpacity style={styles.headerActionButton}>
-                  <Bell size={20} color="#fbbf24" />
-                  <View style={styles.notifBadge} />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerActionButton}>
-                  <Menu size={20} color="#fbbf24" />
-                </TouchableOpacity>
-              </View>
+
             </View>
           </BlurView>
         </View>
@@ -172,10 +159,10 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
         <BlurView intensity={30} tint="dark" style={styles.xpCard}>
           <View style={styles.xpCardHeader}>
             <View>
-              <Text style={styles.xpLabel}>XP İlerlemesi</Text>
-              <Text style={styles.xpValue}>{user.xp} <Text style={styles.xpTotal}>/ {getNextLevelXP(user.level)} XP</Text></Text>
+              <Text style={styles.xpLabel}>KUMBARA (Altın Birikimi)</Text>
+              <Text style={styles.xpValue}>{user.xp} <Text style={styles.xpTotal}>/ {getNextLevelXP(user.level)} ALTIN</Text></Text>
             </View>
-            <Text style={styles.xpRemaining}>Seviye {user.level + 1} için {getNextLevelXP(user.level) - user.xp} XP</Text>
+            <Text style={styles.xpRemaining}>Seviye {user.level + 1} için {getNextLevelXP(user.level) - user.xp} Altın</Text>
           </View>
           <View style={styles.xpBarContainer}>
             <Animated.View

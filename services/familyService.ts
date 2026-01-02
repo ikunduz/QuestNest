@@ -43,3 +43,15 @@ export const createUser = async (userData: any) => {
     if (error) throw error;
     return data;
 };
+
+// Aile ID'sine göre bul (Dashboard için)
+export const getFamilyById = async (familyId: string) => {
+    const { data, error } = await supabase
+        .from('families')
+        .select('*')
+        .eq('id', familyId)
+        .single();
+
+    if (error) throw error;
+    return data;
+};

@@ -1,12 +1,17 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Image, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Animated, Image, TouchableOpacity, Dimensions, Modal, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Swords, Users } from 'lucide-react-native';
-import { StatusBar } from 'expo-status-bar';
+import { Swords, Users, BookOpen, X, Smartphone, Zap, Crown, Sparkles } from 'lucide-react-native';
 
-const { width } = Dimensions.get('window');
+import { StatusBar } from 'expo-status-bar';
+import { BlurView } from 'expo-blur';
+
+const { width, height } = Dimensions.get('window');
 
 export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+    // State
+    const [showHowToPlay, setShowHowToPlay] = useState(false);
+
     // Animations
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
@@ -35,24 +40,18 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     return (
         <View style={styles.container}>
             <StatusBar style="light" />
-
-            {/* Background Layers */}
             <LinearGradient
                 colors={['#1a1f2e', '#231d0f']}
                 style={StyleSheet.absoluteFill}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             />
-
-            {/* Ambient Gradient Overlay similar to the HTML design */}
             <LinearGradient
                 colors={['rgba(30, 58, 138, 0.4)', 'rgba(88, 28, 135, 0.2)', 'transparent']}
                 style={StyleSheet.absoluteFill}
             />
 
             <View style={styles.content}>
-
-                {/* Hero Illustration */}
                 <Animated.View style={[styles.heroContainer, { opacity: fadeAnim, transform: [{ scale: itemsScale }] }]}>
                     <View style={styles.heroGlow} />
                     <Image
@@ -62,53 +61,129 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                     />
                 </Animated.View>
 
-                {/* Header Text */}
                 <Animated.View style={[styles.textContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
                     <Text style={styles.title}>HeroQuest</Text>
                     <Text style={styles.subtitle}>Ev İşlerini Efsaneye Dönüştür.</Text>
                 </Animated.View>
 
-                {/* Action Buttons */}
                 <Animated.View style={[styles.buttonContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-                    {/* Primary Button */}
                     <TouchableOpacity
                         style={styles.primaryButton}
                         onPress={() => navigation.navigate('FamilySetup')}
                         activeOpacity={0.8}
                     >
                         <Swords size={24} color="#231d0f" style={styles.buttonIcon} />
-                        <Text style={styles.primaryButtonText}>Yeni Maceraya Başla</Text>
+                        <Text style={styles.primaryButtonText}>Aile Oluştur</Text>
                     </TouchableOpacity>
 
-                    {/* Secondary Button */}
                     <TouchableOpacity
                         style={styles.secondaryButton}
                         onPress={() => navigation.navigate('JoinFamily')}
                         activeOpacity={0.8}
                     >
                         <Users size={24} color="#fbbd23" style={styles.buttonIcon} />
-                        <Text style={styles.secondaryButtonText}>Mevcut Partiye Katıl</Text>
+                        <Text style={styles.secondaryButtonText}>Mevcut Aileye Katıl</Text>
                     </TouchableOpacity>
                 </Animated.View>
 
-                {/* Footer */}
+                {/* New 'How to Play' Footer */}
                 <Animated.View style={[styles.footer, { opacity: fadeAnim }]}>
-                    <Text style={styles.footerText}>Zaten bir kahraman mısın? </Text>
-                    <TouchableOpacity>
-                        <Text style={styles.linkText}>Giriş Yap</Text>
+                    <TouchableOpacity style={styles.howToPlayButton} onPress={() => setShowHowToPlay(true)}>
+                        <BookOpen size={16} color="#94a3b8" style={{ marginRight: 6 }} />
+                        <Text style={styles.howToPlayText}>Bu Macera Nasıl Çalışır?</Text>
                     </TouchableOpacity>
                 </Animated.View>
 
+                {/* Modal */}
+                <Modal
+                    visible={showHowToPlay}
+                    animationType="slide"
+                    transparent={true}
+                    onRequestClose={() => setShowHowToPlay(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+                        <View style={styles.modalContent}>
+                            <LinearGradient
+                                colors={['#1a1f2e', '#111827']}
+                                style={styles.modalGradient}
+                            >
+                                {/* Header */}
+                                <View style={styles.modalHeader}>
+                                    <View style={styles.modalTitleRow}>
+                                        <BookOpen color="#fbbd23" size={24} />
+                                        <Text style={styles.modalTitle}>KRALLIK REHBERİ</Text>
+                                    </View>
+                                    <TouchableOpacity onPress={() => setShowHowToPlay(false)} style={styles.closeButton}>
+                                        <X color="#94a3b8" size={24} />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <ScrollView contentContainerStyle={styles.modalScroll}>
+
+                                    {/* Card 1: Concept */}
+                                    <View style={styles.guideCard}>
+                                        <View style={styles.guideIconContainer}>
+                                            <Crown color="#fbbd23" size={32} />
+                                        </View>
+                                        <Text style={styles.guideTitle}>Burası Senin Krallığın! 🏰</Text>
+                                        <Text style={styles.guideText}>
+                                            Ev işleri artık sıkıcı görevler değil, efsanevi maceralar!
+                                            Odanı toplamak bir "Karanlık Zindan Temizliği", diş fırçalamak ise "İnci Kalkan Bakımı" olabilir.
+                                        </Text>
+                                    </View>
+
+                                    {/* Card 2: Sync */}
+                                    <View style={styles.guideCard}>
+                                        <View style={[styles.guideIconContainer, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+                                            <Smartphone color="#60a5fa" size={32} />
+                                        </View>
+                                        <Text style={[styles.guideTitle, { color: '#60a5fa' }]}>Büyülü Bağlantı ✨</Text>
+                                        <Text style={styles.guideText}>
+                                            Aynı "Aile Kodu" ile 3 farklı cihazdan bağlanın! Sen, Annen ve Baban aynı krallıktasınız.
+                                        </Text>
+                                    </View>
+
+                                    {/* Card 3: Real Time */}
+                                    <View style={styles.guideCard}>
+                                        <View style={[styles.guideIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                                            <Zap color="#34d399" size={32} />
+                                        </View>
+                                        <Text style={[styles.guideTitle, { color: '#34d399' }]}>Şimşek Hızı! ⚡</Text>
+                                        <Text style={styles.guideText}>
+                                            Kraliçe (Anne) bir görev verdiğinde, Küçük Kahramanın (Senin) ekranına anında düşer!
+                                            Görevi tamamlayıp "Onaya Gönder" dediğinde, ebeveynlerine bildirim gider.
+                                        </Text>
+                                    </View>
+
+                                    {/* Card 4: Roles */}
+                                    <View style={styles.guideCard}>
+                                        <View style={[styles.guideIconContainer, { backgroundColor: 'rgba(236, 72, 153, 0.1)' }]}>
+                                            <Sparkles color="#f472b6" size={32} />
+                                        </View>
+                                        <Text style={[styles.guideTitle, { color: '#f472b6' }]}>Kahramanlar ve Yöneticiler</Text>
+                                        <Text style={styles.guideText}>
+                                            • Ebeveynler: Görev verir, ödülleri onaylar ve altını yönetir.
+                                            {'\n'}• Çocuklar: Maceralara atılır, XP kazanır ve seviye atlar!
+                                        </Text>
+                                    </View>
+
+                                </ScrollView>
+
+                                <TouchableOpacity style={styles.modalButton} onPress={() => setShowHowToPlay(false)}>
+                                    <Text style={styles.modalButtonText}>ANLAŞILDI!</Text>
+                                </TouchableOpacity>
+                            </LinearGradient>
+                        </View>
+                    </View>
+                </Modal>
             </View>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#1a1f2e',
-    },
+    container: { flex: 1, backgroundColor: '#1a1f2e' },
     content: {
         flex: 1,
         justifyContent: 'center',
@@ -133,18 +208,12 @@ const styles = StyleSheet.create({
         opacity: 0.6,
         transform: [{ scale: 0.8 }],
     },
-    heroImage: {
-        width: '100%',
-        height: '100%',
-    },
-    textContainer: {
-        alignItems: 'center',
-        marginBottom: 32,
-    },
+    heroImage: { width: '100%', height: '100%' },
+    textContainer: { alignItems: 'center', marginBottom: 32 },
     title: {
         fontSize: 40,
-        fontWeight: '800', // Close to 'font-extrabold'
-        color: '#fbbd23', // Primary gold color from Tailwind config
+        fontWeight: '800',
+        color: '#fbbd23',
         textAlign: 'center',
         textShadowColor: 'rgba(251, 189, 35, 0.3)',
         textShadowOffset: { width: 0, height: 0 },
@@ -157,18 +226,14 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         textAlign: 'center',
     },
-    buttonContainer: {
-        width: '100%',
-        gap: 16,
-        maxWidth: 400,
-    },
+    buttonContainer: { width: '100%', gap: 16, maxWidth: 400 },
     primaryButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#fbbd23', // Primary
+        backgroundColor: '#fbbd23',
         height: 56,
-        borderRadius: 28, // Rounded full
+        borderRadius: 28,
         shadowColor: '#fbbd23',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.5,
@@ -176,7 +241,7 @@ const styles = StyleSheet.create({
         elevation: 10,
     },
     primaryButtonText: {
-        color: '#231d0f', // Background dark for contrast
+        color: '#231d0f',
         fontSize: 18,
         fontWeight: 'bold',
         letterSpacing: 0.5,
@@ -197,24 +262,117 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         letterSpacing: 0.5,
     },
-    buttonIcon: {
-        marginRight: 8,
-    },
+    buttonIcon: { marginRight: 8 },
+
+    // Footer styles
     footer: {
+        marginTop: 'auto',
+        paddingVertical: 20,
+    },
+    howToPlayButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 'auto',
-        paddingVertical: 16,
+        padding: 10,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
     },
-    footerText: {
-        color: '#94a3b8', // Slate-400 equivalent
+    howToPlayText: {
+        color: '#94a3b8',
         fontSize: 14,
-        fontWeight: '500',
+        fontWeight: '600',
     },
-    linkText: {
-        color: '#fbbd23',
-        fontSize: 14,
+
+    // Modal Styles
+    modalContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        width: '90%',
+        height: '80%',
+        borderRadius: 32,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#fbbd23',
+        shadowColor: '#fbbd23',
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    modalGradient: {
+        flex: 1,
+        padding: 24,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.1)',
+    },
+    modalTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    modalTitle: {
+        fontSize: 20,
         fontWeight: 'bold',
-        textDecorationLine: 'underline',
+        color: '#fbbd23',
+        letterSpacing: 1,
     },
+    closeButton: {
+        padding: 4,
+    },
+    modalScroll: {
+        gap: 16,
+        paddingBottom: 24,
+    },
+    guideCard: {
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        padding: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+    },
+    guideIconContainer: {
+        width: 50,
+        height: 50,
+        borderRadius: 16,
+        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    guideTitle: {
+        color: '#fbbd23',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 8,
+    },
+    guideText: {
+        color: '#cbd5e1',
+        fontSize: 14,
+        lineHeight: 22,
+    },
+    modalButton: {
+        backgroundColor: '#fbbd23',
+        paddingVertical: 16,
+        borderRadius: 16,
+        alignItems: 'center',
+        marginTop: 16,
+    },
+    modalButtonText: {
+        color: '#231d0f',
+        fontWeight: '900',
+        fontSize: 16,
+        letterSpacing: 1,
+    }
 });

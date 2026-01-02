@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Dimensions, Modal, Share, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import {
@@ -11,7 +12,9 @@ import { GameButton } from '../components/GameButton';
 import { Quest, QuestCategory, ParentType } from '../types';
 import { CATEGORY_METADATA } from '../constants';
 
-// Simulated Data for "Party Status" visual logic (since app focuses on single user context mainly)
+import { getFamilyById } from '../services/familyService';
+
+
 const MOCK_PARTY = [
   { id: '1', name: 'Leo', role: 'Paladin', lvl: 4, xp: 800, maxXp: 1000, avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB7OniOqaon-5pl0Oo6aj2Hiem8xZmRsWscgoPIZTaNqyJ2I85HbnYKJRoud8-eBzhXUCZ_OgxtILlSkrOVZd4W_6tP7822Q69QviTSSAzFi_lOWQxL5moBApivWj-s4tSSrn7ldYkLC9lsdpfbZiVVkoEEIfQS-mt-J7kgtfqMWX8_dlElPMLz5F9kv8L-sj3DyRWr84x3bQaoljlwq90cKrU-nXHad79812CJchxx9U7abbE_gMR7LTSzYFdXOy11OuC6hpyp', roleLabel: 'Şövalye' },
   { id: '2', name: 'Mia', role: 'Rogue', lvl: 2, xp: 300, maxXp: 1000, avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDl2d-QJK7Yj6bke3zQ9eT6IUxeISPZfXwIZH4qiZb3nmK7Fx7wgUvd5AoAJ_RYlh8dP20upJgV-Fui2vteFLtlK3_0kXFleCKujv5BYjrnrYk7vi7wiZKOTekgXv6V5hH97WwDFJNnU7qin03eJb0yVsVyhbysTg9rXL4z3GViciQt8HANhD6zmR3spxqnVhT4mzJFK74aOzmaYE1iHx5JTugrvATcwCMoA9wt63y6ArLWkC_YXa2bm-5HyRyco_I6bKbJPtVp', roleLabel: 'Kuşatıcı' }
@@ -23,13 +26,52 @@ interface ParentDashboardProps {
   onAddQuest: (quest: Partial<Quest>) => void;
   onDelete: (id: string) => void;
   onSendBlessing: (from: ParentType) => void;
+  onExit: () => void;
 }
 
-export const ParentDashboard: React.FC<ParentDashboardProps> = ({ quests, onApprove, onAddQuest, onDelete, onSendBlessing }) => {
+export const ParentDashboard: React.FC<ParentDashboardProps> = ({ quests, onApprove, onAddQuest, onDelete, onSendBlessing, onExit }) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [storedFamilyCode, setStoredFamilyCode] = useState<string | null>(null);
+
+
   const [parentType, setParentType] = useState<ParentType>('dad');
   const [newQuestTitle, setNewQuestTitle] = useState('');
   const [isRoutine, setIsRoutine] = useState(false);
+
+  // Load family code on mount
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        const jsonValue = await AsyncStorage.getItem('questnest_user');
+        if (jsonValue != null) {
+          const user = JSON.parse(jsonValue);
+
+
+          if (user.familyCode) {
+            setStoredFamilyCode(user.familyCode);
+          } else if (user.family_id) {
+            // Fallback: Fetches from server if local code is missing (for older installs)
+            try {
+              const family = await getFamilyById(user.family_id);
+              if (family && family.family_code) {
+                setStoredFamilyCode(family.family_code);
+
+                // Update local storage
+                user.familyCode = family.family_code;
+                await AsyncStorage.setItem('questnest_user', JSON.stringify(user));
+              }
+            } catch (err) {
+              console.log("Failed to fetch family code fallback:", err);
+            }
+          }
+        }
+      } catch (e) {
+        // error reading value
+      }
+    };
+    loadData();
+  }, []);
 
   const pendingQuests = quests.filter(q => q.status === 'pending_approval');
 
@@ -57,13 +99,15 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ quests, onAppr
                 />
               </View>
               <View>
-                <Text style={styles.parentRole}>LONCA USTASI</Text>
-                <Text style={styles.parentName}>Yönetici Paneli</Text>
+                <Text style={styles.parentRole}>YÖNETİCİ PANELİ</Text>
+                <Text style={styles.parentName}>Lonca Ustası</Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.notifButton}>
-              <Bell size={20} color="#fff" />
-              <View style={styles.notifDot} />
+            <TouchableOpacity style={styles.notifButton} onPress={onExit}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 10 }}>ÇIKIŞ</Text>
+                <Settings size={18} color="#fff" />
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -99,7 +143,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ quests, onAppr
                 </View>
                 <View style={styles.xpProgress}>
                   <View style={styles.xpTextRow}>
-                    <Text style={styles.xpLabel}>XP İlerlemesi</Text>
+                    <Text style={styles.xpLabel}>Altın Birikimi</Text>
                     <Text style={styles.xpLabel}>{member.xp}/{member.maxXp}</Text>
                   </View>
                   <View style={styles.xpTrack}>
@@ -178,7 +222,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ quests, onAppr
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => onApprove(quest.id, quest.xpReward)} style={styles.approveButton}>
                     <Check size={20} color="#1e1b4b" />
-                    <Text style={styles.approveButtonText}>Onayla (+{quest.xpReward} XP)</Text>
+                    <Text style={styles.approveButtonText}>Onayla (+{quest.xpReward} ALTIN)</Text>
                   </TouchableOpacity>
                 </View>
               </BlurView>
@@ -236,6 +280,73 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ quests, onAppr
         <View style={{ height: 100 }} />
       </ScrollView>
 
+      {/* Settings Modal */}
+      {showSettings && (
+        <Modal
+          transparent={true}
+          animationType="fade"
+          visible={showSettings}
+          onRequestClose={() => setShowSettings(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <BlurView intensity={30} tint="dark" style={styles.modalContent}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <Text style={styles.modalTitle}>Ayarlar</Text>
+                <TouchableOpacity onPress={() => setShowSettings(false)}>
+                  <X size={24} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ marginBottom: 24 }}>
+                <Text style={{ color: '#94a3b8', marginBottom: 8, fontSize: 14 }}>AİLE KODU</Text>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                    padding: 16,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: 'rgba(251, 191, 36, 0.3)',
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between'
+                  }}
+                  onPress={async () => {
+                    if (storedFamilyCode) {
+                      try {
+                        await Share.share({
+                          message: `HeroQuest Aile Kodumuz: ${storedFamilyCode}`,
+                          title: 'HeroQuest Aile Kodu'
+                        });
+                      } catch (error) {
+                        Alert.alert("Hata", "Paylaşım başlatılamadı.");
+                      }
+                    } else {
+                      Alert.alert("Hata", "Aile kodu bulunamadı.");
+                    }
+                  }}
+                >
+                  <Text style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold', letterSpacing: 2 }}>
+                    {storedFamilyCode || "YÜKLENİYOR..."}
+                  </Text>
+                  <View style={{ backgroundColor: '#fbbf24', padding: 8, borderRadius: 8 }}>
+                    <Text style={{ color: '#1e1b4b', fontWeight: 'bold', fontSize: 10 }}>PAYLAŞ</Text>
+                  </View>
+                </TouchableOpacity>
+                <Text style={{ color: '#64748b', fontSize: 12, marginTop: 8 }}>
+                  Diğer ebeveynler veya yeni cihazlar bu kodu kullanarak aileye katılabilir.
+                </Text>
+              </View>
+
+              <TouchableOpacity style={{ padding: 16, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Settings size={20} color="#94a3b8" />
+                <Text style={{ color: '#94a3b8' }}>Diğer Ayarlar (Yakında)</Text>
+              </TouchableOpacity>
+
+            </BlurView>
+          </View>
+        </Modal>
+      )}
+
       {/* Bottom Navigation */}
       <BlurView intensity={50} tint="dark" style={styles.bottomNav}>
         <View style={styles.navItem}>
@@ -255,10 +366,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ quests, onAppr
           <BookOpen size={24} color="#64748b" />
           <Text style={styles.navText}>Notlar</Text>
         </View>
-        <View style={styles.navItem}>
-          <Settings size={24} color="#64748b" />
-          <Text style={styles.navText}>Ayarlar</Text>
-        </View>
+        <TouchableOpacity style={styles.navItem} onPress={() => setShowSettings(true)}>
+          <Settings size={24} color={showSettings ? "#fbbf24" : "#64748b"} />
+          <Text style={[styles.navText, showSettings && { color: '#fbbf24' }]}>Ayarlar</Text>
+        </TouchableOpacity>
       </BlurView>
     </View>
   );

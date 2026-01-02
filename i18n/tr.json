@@ -13,7 +13,6 @@
     },
     "child": {
         "level": "Seviye",
-        "wisdom": "Bilgenin Öğüdü",
         "activeQuests": "Aktif Görevler",
         "victory": "Zafer!",
         "reportQuest": "Görevi Bildir",

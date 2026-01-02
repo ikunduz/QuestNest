@@ -54,11 +54,7 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
             Alert.alert("🏰", "Her Krallığın bir isme ihtiyacı var, Majesteleri!");
             return;
         }
-        if (step === 2 && !parentName.trim()) {
-            Alert.alert("👑", "Kraliyet kayıtları adınızı gerektiriyor!");
-            return;
-        }
-        if (step === 3 && !childName.trim()) {
+        if (step === 2 && !childName.trim()) {
             Alert.alert("⚔️", "Genç kahramanı tanımlıyın!");
             return;
         }
@@ -78,7 +74,7 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
 
             const parent = await createUser({
                 family_id: family.id,
-                name: parentName,
+                name: 'Lonca Ustası',
                 role: 'parent',
                 parent_type: 'mom',
                 pin_hash: pin
@@ -100,7 +96,8 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
                 level: 1,
                 streak: 0,
                 heroClass: 'knight',
-                pin_hash: pin
+                pin_hash: pin,
+                familyCode: familyCode // Persist the code for easier retrieval
             };
             await AsyncStorage.setItem('questnest_user', JSON.stringify(userState));
 
@@ -131,17 +128,6 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
                 };
             case 2:
                 return {
-                    icon: <User color="#e11d48" size={48} />, // Rose red
-                    title: "SENİN KRALLYET UNVANIN",
-                    subtitle: "Lonca size nasıl hitap etsin?",
-                    placeholder: "Adınız",
-                    value: parentName,
-                    setValue: setParentName,
-                    secure: false,
-                    keyboard: 'default' as const
-                };
-            case 3:
-                return {
                     icon: <Shield color="#3b82f6" size={48} />, // Blue
                     title: "GENÇ KAHRAMAN ADI",
                     subtitle: "Katılan ilk çırak kim?",
@@ -151,7 +137,7 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
                     secure: false,
                     keyboard: 'default' as const
                 };
-            case 4:
+            case 3:
                 return {
                     icon: <Key color="#10b981" size={48} />, // Emerald
                     title: "GİZLİ MÜHÜR",
@@ -196,7 +182,7 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
                         <Animated.View style={[styles.progressFill, { flex: progressAnim }]} />
                     </View>
                     <View style={styles.stepsRow}>
-                        {[1, 2, 3, 4].map((s) => (
+                        {[1, 2, 3].map((s) => (
                             <View
                                 key={s}
                                 style={[
@@ -220,7 +206,7 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
                                 <View style={styles.iconRing}>
                                     {content.icon}
                                 </View>
-                                {step === 4 && <Sparkles size={24} color={THEME_COLOR} style={styles.sparkleIcon} />}
+                                {step === 3 && <Sparkles size={24} color={THEME_COLOR} style={styles.sparkleIcon} />}
                             </View>
 
                             <Text style={styles.title}>{content.title}</Text>
