@@ -15,6 +15,8 @@ export interface Quest {
   category: QuestCategory;
   proofUrl?: string;
   createdAt: number;
+  type?: 'daily' | 'routine';
+  completedAt?: number;
 }
 
 export interface Reward {
@@ -39,6 +41,22 @@ export interface UserState {
   lastBlessingFrom?: ParentType;
   pin_hash?: string;
   parent_type?: ParentType;
+}
+
+export type EvolutionStage = 'egg' | 'hatching' | 'baby' | 'teen' | 'adult';
+
+export interface PetState {
+  id: string;
+  name: string;
+  type: string;
+  level: number;
+  stage: EvolutionStage;
+  evolution: number; // Current progress to next goal (0-100)
+  goldSpent: number; // Total gold spent in current stage
+  evolutionStartTime?: number; // When the 24h wait started
+  happiness: number;
+  energy: number;
+  lastUpdate: number;
 }
 
 export interface Family {

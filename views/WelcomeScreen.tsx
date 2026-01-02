@@ -1,142 +1,104 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
-import { GameButton } from '../components/GameButton';
-import { Sparkles, Users, UserPlus, Crown, Shield, Star } from 'lucide-react-native';
+import { View, Text, StyleSheet, Animated, Image, TouchableOpacity, Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Swords, Users } from 'lucide-react-native';
+import { StatusBar } from 'expo-status-bar';
+
+const { width } = Dimensions.get('window');
 
 export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     // Animations
-    const logoScale = useRef(new Animated.Value(0)).current;
-    const titleOpacity = useRef(new Animated.Value(0)).current;
-    const buttonsSlide = useRef(new Animated.Value(50)).current;
-    const starRotate = useRef(new Animated.Value(0)).current;
-    const pulseAnim = useRef(new Animated.Value(1)).current;
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(50)).current;
+    const itemsScale = useRef(new Animated.Value(0.9)).current;
 
     useEffect(() => {
-        // Logo appears with bounce
-        Animated.spring(logoScale, {
-            toValue: 1,
-            friction: 4,
-            tension: 50,
-            useNativeDriver: true,
-        }).start();
-
-        // Title fades in
-        Animated.timing(titleOpacity, {
-            toValue: 1,
-            duration: 800,
-            delay: 300,
-            useNativeDriver: true,
-        }).start();
-
-        // Buttons slide up
-        Animated.timing(buttonsSlide, {
-            toValue: 0,
-            duration: 600,
-            delay: 600,
-            easing: Easing.out(Easing.back(1.5)),
-            useNativeDriver: true,
-        }).start();
-
-        // Star rotation loop
-        Animated.loop(
-            Animated.timing(starRotate, {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
                 toValue: 1,
-                duration: 10000,
-                easing: Easing.linear,
+                duration: 1000,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.spring(itemsScale, {
+                toValue: 1,
+                friction: 6,
                 useNativeDriver: true,
             })
-        ).start();
-
-        // Pulse animation for logo
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulseAnim, {
-                    toValue: 1.1,
-                    duration: 1500,
-                    easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: true,
-                }),
-                Animated.timing(pulseAnim, {
-                    toValue: 1,
-                    duration: 1500,
-                    easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: true,
-                }),
-            ])
-        ).start();
+        ]).start();
     }, []);
-
-    const rotateInterpolate = starRotate.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['0deg', '360deg'],
-    });
 
     return (
         <View style={styles.container}>
-            {/* Background decorations */}
-            <Animated.View style={[styles.floatingStar, styles.star1, { transform: [{ rotate: rotateInterpolate }] }]}>
-                <Star color="rgba(251, 191, 36, 0.2)" size={40} />
-            </Animated.View>
-            <Animated.View style={[styles.floatingStar, styles.star2, { transform: [{ rotate: rotateInterpolate }] }]}>
-                <Sparkles color="rgba(251, 191, 36, 0.15)" size={30} />
-            </Animated.View>
-            <Animated.View style={[styles.floatingStar, styles.star3, { transform: [{ rotate: rotateInterpolate }] }]}>
-                <Star color="rgba(251, 191, 36, 0.1)" size={50} />
-            </Animated.View>
+            <StatusBar style="light" />
+
+            {/* Background Layers */}
+            <LinearGradient
+                colors={['#1a1f2e', '#231d0f']}
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            />
+
+            {/* Ambient Gradient Overlay similar to the HTML design */}
+            <LinearGradient
+                colors={['rgba(30, 58, 138, 0.4)', 'rgba(88, 28, 135, 0.2)', 'transparent']}
+                style={StyleSheet.absoluteFill}
+            />
 
             <View style={styles.content}>
-                {/* Animated Logo */}
-                <Animated.View style={[
-                    styles.logoContainer,
-                    { transform: [{ scale: Animated.multiply(logoScale, pulseAnim) }] }
-                ]}>
-                    <View style={styles.logoInner}>
-                        <Crown color="#fbbf24" size={50} />
-                    </View>
-                    <View style={styles.shieldBadge}>
-                        <Shield color="#fbbf24" size={24} fill="rgba(251, 191, 36, 0.2)" />
-                    </View>
+
+                {/* Hero Illustration */}
+                <Animated.View style={[styles.heroContainer, { opacity: fadeAnim, transform: [{ scale: itemsScale }] }]}>
+                    <View style={styles.heroGlow} />
+                    <Image
+                        source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDN7gIaM3Cr5-j10G8M8du5gKXWe1p1SRGmTj9N8HKu6CkP-rn56KdsZs_LlBJZS4jhUXnQUd8VEECTczAqjLv5FSOf0fpnoYSvJ-Jzo0ZjCdYFx7xNysUcCVqlRMf3JMMqDYIC245RJWWzdZGqEVNyqfurpDBk2WQJ0cxhdIvdgQ0ZSzcd8lr8nGpFT5TQW0HhCh2FxFT-cKe3fJ0JBk3rAp86EFaq_kcSCliZZluLJxZ9qgbGIguwUm-UuaGotqpEhUvy-EbF' }}
+                        style={styles.heroImage}
+                        resizeMode="contain"
+                    />
                 </Animated.View>
 
-                {/* Title */}
-                <Animated.View style={{ opacity: titleOpacity }}>
-                    <Text style={styles.title}>QUESTNEST</Text>
-                    <Text style={styles.tagline}>Küçük Kahramanların Büyüdüğü Yer</Text>
-                    <View style={styles.divider}>
-                        <View style={styles.dividerLine} />
-                        <Sparkles color="#fbbf24" size={16} />
-                        <View style={styles.dividerLine} />
-                    </View>
+                {/* Header Text */}
+                <Animated.View style={[styles.textContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                    <Text style={styles.title}>HeroQuest</Text>
+                    <Text style={styles.subtitle}>Ev İşlerini Efsaneye Dönüştür.</Text>
                 </Animated.View>
 
-                {/* Buttons */}
-                <Animated.View style={[
-                    styles.buttonContainer,
-                    { transform: [{ translateY: buttonsSlide }], opacity: titleOpacity }
-                ]}>
-                    <GameButton
+                {/* Action Buttons */}
+                <Animated.View style={[styles.buttonContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                    {/* Primary Button */}
+                    <TouchableOpacity
+                        style={styles.primaryButton}
                         onPress={() => navigation.navigate('FamilySetup')}
-                        variant="primary"
-                        style={styles.button}
+                        activeOpacity={0.8}
                     >
-                        <Users color="#0f172a" size={22} style={{ marginRight: 10 }} />
-                        <Text style={styles.buttonText}>YENİ AİLE OLUŞTUR</Text>
-                    </GameButton>
+                        <Swords size={24} color="#231d0f" style={styles.buttonIcon} />
+                        <Text style={styles.primaryButtonText}>Yeni Maceraya Başla</Text>
+                    </TouchableOpacity>
 
-                    <GameButton
+                    {/* Secondary Button */}
+                    <TouchableOpacity
+                        style={styles.secondaryButton}
                         onPress={() => navigation.navigate('JoinFamily')}
-                        variant="secondary"
-                        style={styles.buttonSecondary}
+                        activeOpacity={0.8}
                     >
-                        <UserPlus color="#fbbf24" size={22} style={{ marginRight: 10 }} />
-                        <Text style={styles.buttonTextSecondary}>AİLEYE KATIL</Text>
-                    </GameButton>
+                        <Users size={24} color="#fbbd23" style={styles.buttonIcon} />
+                        <Text style={styles.secondaryButtonText}>Mevcut Partiye Katıl</Text>
+                    </TouchableOpacity>
                 </Animated.View>
 
                 {/* Footer */}
-                <Animated.Text style={[styles.footer, { opacity: titleOpacity }]}>
-                    Çocuğunuzun görevleri tamamlamasını oyunlaştırın! 🎮
-                </Animated.Text>
+                <Animated.View style={[styles.footer, { opacity: fadeAnim }]}>
+                    <Text style={styles.footerText}>Zaten bir kahraman mısın? </Text>
+                    <TouchableOpacity>
+                        <Text style={styles.linkText}>Giriş Yap</Text>
+                    </TouchableOpacity>
+                </Animated.View>
+
             </View>
         </View>
     );
@@ -145,109 +107,114 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0f172a',
+        backgroundColor: '#1a1f2e',
     },
-    floatingStar: { position: 'absolute' },
-    star1: { top: 60, right: 30 },
-    star2: { top: 150, left: 20 },
-    star3: { bottom: 200, right: 50 },
     content: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 24,
+        paddingHorizontal: 24,
+        paddingTop: 48,
+        paddingBottom: 16,
     },
-    logoContainer: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    heroContainer: {
+        width: width * 0.8,
+        aspectRatio: 1,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 32,
-        borderWidth: 3,
-        borderColor: 'rgba(251, 191, 36, 0.3)',
     },
-    logoInner: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: 'rgba(251, 191, 36, 0.15)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    shieldBadge: {
+    heroGlow: {
         position: 'absolute',
-        bottom: -5,
-        right: -5,
-        backgroundColor: '#0f172a',
-        borderRadius: 20,
-        padding: 8,
-        borderWidth: 2,
-        borderColor: 'rgba(251, 191, 36, 0.5)',
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(251, 189, 35, 0.2)',
+        borderRadius: width / 2,
+        opacity: 0.6,
+        transform: [{ scale: 0.8 }],
+    },
+    heroImage: {
+        width: '100%',
+        height: '100%',
+    },
+    textContainer: {
+        alignItems: 'center',
+        marginBottom: 32,
     },
     title: {
-        fontSize: 42,
-        fontWeight: 'bold',
-        color: '#fbbf24',
-        letterSpacing: 6,
+        fontSize: 40,
+        fontWeight: '800', // Close to 'font-extrabold'
+        color: '#fbbd23', // Primary gold color from Tailwind config
         textAlign: 'center',
+        textShadowColor: 'rgba(251, 189, 35, 0.3)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 10,
+        marginBottom: 12,
     },
-    tagline: {
-        fontSize: 13,
-        color: '#94a3b8',
-        marginTop: 8,
-        letterSpacing: 1,
+    subtitle: {
+        fontSize: 18,
+        color: 'rgba(255, 255, 255, 0.8)',
+        fontWeight: '500',
         textAlign: 'center',
-    },
-    divider: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 20,
-        gap: 12,
-    },
-    dividerLine: {
-        width: 40,
-        height: 2,
-        backgroundColor: 'rgba(251, 191, 36, 0.3)',
-        borderRadius: 1,
     },
     buttonContainer: {
         width: '100%',
-        marginTop: 48,
         gap: 16,
+        maxWidth: 400,
     },
-    button: {
-        width: '100%',
-        paddingVertical: 18,
+    primaryButton: {
         flexDirection: 'row',
-        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#fbbd23', // Primary
+        height: 56,
+        borderRadius: 28, // Rounded full
+        shadowColor: '#fbbd23',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+        elevation: 10,
     },
-    buttonSecondary: {
-        width: '100%',
-        paddingVertical: 18,
+    primaryButtonText: {
+        color: '#231d0f', // Background dark for contrast
+        fontSize: 18,
+        fontWeight: 'bold',
+        letterSpacing: 0.5,
+    },
+    secondaryButton: {
         flexDirection: 'row',
-        borderRadius: 20,
-        borderWidth: 2,
-        borderColor: '#fbbf24',
-        backgroundColor: 'transparent',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        height: 56,
+        borderRadius: 28,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
     },
-    buttonText: {
+    secondaryButtonText: {
+        color: '#ffffff',
+        fontSize: 18,
         fontWeight: 'bold',
-        fontSize: 16,
-        color: '#0f172a',
-        letterSpacing: 1,
+        letterSpacing: 0.5,
     },
-    buttonTextSecondary: {
-        fontWeight: 'bold',
-        fontSize: 16,
-        color: '#fbbf24',
-        letterSpacing: 1,
+    buttonIcon: {
+        marginRight: 8,
     },
     footer: {
-        marginTop: 48,
-        color: '#64748b',
-        fontSize: 12,
-        textAlign: 'center',
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 'auto',
+        paddingVertical: 16,
+    },
+    footerText: {
+        color: '#94a3b8', // Slate-400 equivalent
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    linkText: {
+        color: '#fbbd23',
+        fontSize: 14,
+        fontWeight: 'bold',
+        textDecorationLine: 'underline',
     },
 });

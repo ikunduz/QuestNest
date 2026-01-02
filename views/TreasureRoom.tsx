@@ -1,30 +1,33 @@
-
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Animated } from 'react-native';
-import { ShoppingBag, Lock, Gift, Coins, Star, Sparkles, Crown } from 'lucide-react-native';
-import { GameButton } from '../components/GameButton';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { ShoppingBag, Lock, Coins, Star, ArrowLeft, Ticket, Shirt, Gamepad2, Utensils, Diamond, Gem } from 'lucide-react-native';
 import { ConfettiEffect } from '../components/ConfettiEffect';
 import { Reward } from '../types';
+
+const { width } = Dimensions.get('window');
 
 interface TreasureRoomProps {
   xp: number;
   rewards: Reward[];
-  onRedeem: (rewardId: string) => void;
+  onRedeem: (reward: Reward) => void;
+  onBack?: () => void; // Added optional back handler if needed by parent
 }
 
-export const TreasureRoom: React.FC<TreasureRoomProps> = ({ xp, rewards, onRedeem }) => {
+export const TreasureRoom: React.FC<TreasureRoomProps> = ({ xp, rewards, onRedeem, onBack }) => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [purchasedId, setPurchasedId] = useState<string | null>(null);
 
   const handlePurchase = (reward: Reward) => {
     if (xp < reward.cost) {
-      Alert.alert('💰 Yetersiz XP', `Bu ödül için ${reward.cost} XP gerekiyor.`);
+      Alert.alert('💰 Yetersiz Altın', `Bu ödül için ${reward.cost} Altın gerekiyor.`);
       return;
     }
 
     Alert.alert(
       `${reward.icon} ${reward.name}`,
-      `Bu ödülü ${reward.cost} XP karşılığında satın almak istiyor musun?`,
+      `Bu ödülü ${reward.cost} Altın karşılığında almak istiyor musun?`,
       [
         { text: 'İptal', style: 'cancel' },
         {
@@ -32,8 +35,8 @@ export const TreasureRoom: React.FC<TreasureRoomProps> = ({ xp, rewards, onRedee
           onPress: () => {
             setPurchasedId(reward.id);
             setShowConfetti(true);
-            onRedeem(reward.id);
-            Alert.alert('🎉 Tebrikler!', `${reward.name} satın alındı! Ebeveynine haber ver!`);
+            onRedeem(reward);
+            Alert.alert('🎉 Harika!', `${reward.name} senin oldu!`);
             setTimeout(() => setPurchasedId(null), 2000);
           }
         }
@@ -41,179 +44,237 @@ export const TreasureRoom: React.FC<TreasureRoomProps> = ({ xp, rewards, onRedee
     );
   };
 
+  // Helper to map type/icon to visual elements if needed, though Reward object usually has them.
+  // For the grid demo, use the passed rewards data but style them like the glass cards.
+
   return (
-    <View style={styles.wrapper}>
+    <View style={styles.container}>
+      {/* Background Layer */}
+      <View style={StyleSheet.absoluteFill}>
+        <Image
+          source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDnjdaq57wWTDNwihc2IMgDi3Mp9swB3lWrGfKN4xGL-p3Rr0cNulSkoTNfRukKW7cad4CaUVZZeJkCzZV1mXvVPbSlGD4w0ppUvgU3A649QxFWDb8TgiYPFb_D3dTPXl91z19s1qAX-EC8Jh_WA2hkakfTSF0Agpw7HaRDCbThcHUTTN8Iajh1nkKp2TGmi8xWngT9eo7KOjDH_rnNghljF00qgbHHCUajhgLevtgU5MedKVFQNuNQ1oDnHh2UAqSLCt7O5lZI' }}
+          style={StyleSheet.absoluteFillObject}
+          blurRadius={3} // Slight native blur on the image itself
+        />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(15, 23, 42, 0.8)' }]} />
+      </View>
+
       <ConfettiEffect active={showConfetti} onComplete={() => setShowConfetti(false)} />
 
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerIcon}>
-            <Crown color="#fbbf24" size={40} />
-            <Sparkles color="#fbbf24" size={20} style={styles.sparkle1} />
-            <Sparkles color="#fbbf24" size={16} style={styles.sparkle2} />
-          </View>
-          <Text style={styles.headerTitle}>HAZİNE ODASI</Text>
-          <Text style={styles.headerSub}>Kahramanlığının meyvelerini topla!</Text>
+      {/* Top App Bar */}
+      <BlurView intensity={20} tint="dark" style={styles.header}>
+        <TouchableOpacity style={styles.iconButton} onPress={onBack}>
+          <ArrowLeft color="#fff" size={24} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Hazine Odası</Text>
+        <TouchableOpacity style={styles.iconButton}>
+          <ShoppingBag color="#fbbf24" size={24} />
+          <View style={styles.badgeDot} />
+        </TouchableOpacity>
+      </BlurView>
 
-          <View style={styles.xpBadge}>
-            <Coins color="#fbbf24" size={24} />
-            <Text style={styles.xpText}>{xp} XP</Text>
-            <Text style={styles.xpLabel}>Hazine Puanı</Text>
-          </View>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+        {/* Hero Section: Balance */}
+        <View style={styles.balanceContainer}>
+          <Text style={styles.balanceLabel}>SERVETİN</Text>
+          <BlurView intensity={30} tint="light" style={styles.balanceCard}>
+            <View style={styles.balanceItem}>
+              <Text style={styles.balanceValue}>{xp * 5}</Text>
+              <View style={styles.balanceType}>
+                <Coins size={16} color="#fbbf24" fill="#fbbf24" />
+                <Text style={styles.balanceTypeName}>ALTIN</Text>
+              </View>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.balanceItem}>
+              <Text style={styles.balanceValue}>15</Text>
+              <View style={styles.balanceType}>
+                <Diamond size={16} color="#c084fc" fill="#c084fc" />
+                <Text style={[styles.balanceTypeName, { color: '#c084fc' }]}>MÜCEVHER</Text>
+              </View>
+            </View>
+          </BlurView>
         </View>
 
-        {/* Rewards Grid */}
+        {/* Categories */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesContainer}>
+          <TouchableOpacity style={styles.categoryButtonActive}>
+            <Text style={styles.categoryTextActive}>Tüm Ganimetler</Text>
+          </TouchableOpacity>
+          <BlurView intensity={20} tint="light" style={styles.categoryButton}>
+            <Utensils size={16} color="#fff" />
+            <Text style={styles.categoryText}>Atıştırmalık</Text>
+          </BlurView>
+          <BlurView intensity={20} tint="light" style={styles.categoryButton}>
+            <Gamepad2 size={16} color="#fff" />
+            <Text style={styles.categoryText}>Ekran Süresi</Text>
+          </BlurView>
+          <BlurView intensity={20} tint="light" style={styles.categoryButton}>
+            <Ticket size={16} color="#fff" />
+            <Text style={styles.categoryText}>Özel</Text>
+          </BlurView>
+          <BlurView intensity={20} tint="light" style={styles.categoryButton}>
+            <Shirt size={16} color="#fff" />
+            <Text style={styles.categoryText}>Ekipman</Text>
+          </BlurView>
+        </ScrollView>
+
+        {/* Reward Grid */}
         <View style={styles.grid}>
           {rewards.map((reward) => {
             const canAfford = xp >= reward.cost;
             const isPurchased = purchasedId === reward.id;
 
             return (
-              <TouchableOpacity
-                key={reward.id}
-                style={[
-                  styles.rewardCard,
-                  !canAfford && styles.rewardCardDisabled,
-                  isPurchased && styles.rewardCardPurchased,
-                ]}
-                onPress={() => handlePurchase(reward)}
-                disabled={!canAfford}
-                activeOpacity={0.7}
-              >
-                {/* Glow effect for affordable items */}
-                {canAfford && (
-                  <View style={styles.glowEffect} />
-                )}
-
-                <View style={styles.rewardHeader}>
-                  <Text style={styles.rewardEmoji}>{reward.icon}</Text>
-                  <View style={[styles.typeBadge, reward.type === 'real' ? styles.typeReal : styles.typeDigital]}>
-                    <Star size={10} color={reward.type === 'real' ? '#fbbf24' : '#3b82f6'} />
-                    <Text style={[styles.typeText, { color: reward.type === 'real' ? '#fbbf24' : '#3b82f6' }]}>
-                      {reward.type === 'real' ? 'FİZİKSEL' : 'DİJİTAL'}
-                    </Text>
+              <BlurView key={reward.id} intensity={15} tint="light" style={[styles.card, !canAfford && styles.cardDisabled]}>
+                {/* Image Placeholder Area */}
+                <View style={styles.cardImageContainer}>
+                  <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)']} style={[StyleSheet.absoluteFill, { zIndex: 1 }]} />
+                  <Text style={{ fontSize: 40 }}>{reward.icon}</Text>
+                  <View style={styles.rarityBadge}>
+                    <Text style={styles.rarityText}>{reward.cost > 500 ? 'NADİR' : 'YAYGIN'}</Text>
                   </View>
                 </View>
 
-                <Text style={styles.rewardName}>{reward.name}</Text>
-                <Text style={styles.rewardSubtitle}>
-                  {canAfford ? '✨ Satın alınabilir!' : '🔒 Daha fazla XP kazan'}
-                </Text>
-
-                <View style={styles.rewardFooter}>
-                  <View style={styles.costBox}>
-                    <Coins color="#fbbf24" size={16} />
-                    <Text style={styles.costText}>{reward.cost}</Text>
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle} numberOfLines={1}>{reward.name}</Text>
+                  <View style={styles.cardCost}>
+                    <Coins size={14} color="#fbbf24" fill="#fbbf24" />
+                    <Text style={styles.cardCostText}>{reward.cost}</Text>
                   </View>
 
-                  <View style={[styles.buyBtn, canAfford ? styles.buyBtnActive : styles.buyBtnDisabled]}>
-                    <Text style={[styles.buyBtnText, canAfford && styles.buyBtnTextActive]}>
-                      {canAfford ? 'AL' : <Lock size={14} color="#64748b" />}
+                  <TouchableOpacity
+                    style={[styles.redeemButton, canAfford ? styles.redeemActive : styles.redeemDisabled]}
+                    onPress={() => handlePurchase(reward)}
+                    disabled={!canAfford}
+                  >
+                    <Text style={[styles.redeemText, canAfford ? styles.redeemTextActive : styles.redeemTextDisabled]}>
+                      {canAfford ? 'Talep Et' : 'Kilitli'}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
+              </BlurView>
             );
           })}
         </View>
+
+        <View style={{ height: 100 }} />
       </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  wrapper: { flex: 1, backgroundColor: '#0f172a' },
-  container: { padding: 16, paddingBottom: 100 },
+  container: { flex: 1, backgroundColor: '#0f172a' },
+  scrollContent: { paddingBottom: 100 },
   header: {
-    backgroundColor: '#1e1b4b',
-    padding: 32,
-    borderRadius: 32,
-    borderWidth: 3,
-    borderColor: 'rgba(251, 191, 36, 0.4)',
+    paddingTop: 50,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)'
   },
-  headerIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(251, 191, 36, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sparkle1: { position: 'absolute', top: 5, right: 5 },
-  sparkle2: { position: 'absolute', bottom: 10, left: 5 },
-  headerTitle: { fontSize: 28, color: '#fbbf24', fontWeight: 'bold', letterSpacing: 2 },
-  headerSub: { fontSize: 12, color: '#94a3b8', marginTop: 4 },
-  xpBadge: {
+  headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  iconButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)' },
+  badgeDot: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' },
+
+  balanceContainer: { alignItems: 'center', paddingVertical: 24, paddingHorizontal: 16 },
+  balanceLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', letterSpacing: 1.5, marginBottom: 12 },
+  balanceCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.8)',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 30,
-    borderWidth: 2,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 100,
+    borderWidth: 1,
     borderColor: 'rgba(251, 191, 36, 0.3)',
-    marginTop: 20,
-    gap: 8,
+    overflow: 'hidden'
   },
-  xpText: { fontSize: 24, color: '#fbbf24', fontWeight: 'bold' },
-  xpLabel: { fontSize: 10, color: '#94a3b8', marginLeft: 4 },
-  grid: { gap: 16 },
-  rewardCard: {
-    backgroundColor: '#1e293b',
-    padding: 20,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: '#334155',
-    overflow: 'hidden',
-  },
-  rewardCardDisabled: {
-    opacity: 0.5,
-    borderColor: '#1e293b',
-  },
-  rewardCardPurchased: {
-    borderColor: '#22c55e',
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-  },
-  glowEffect: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: '#fbbf24',
-    opacity: 0.5,
-  },
-  rewardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  rewardEmoji: { fontSize: 48 },
-  typeBadge: {
+  balanceItem: { alignItems: 'center' },
+  balanceValue: { color: '#fff', fontSize: 24, fontWeight: '800' },
+  balanceType: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  balanceTypeName: { color: '#fbbf24', fontSize: 10, fontWeight: 'bold', letterSpacing: 0.5 },
+  divider: { width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.2)', marginHorizontal: 24 },
+
+  categoriesContainer: { paddingHorizontal: 16, paddingBottom: 24, gap: 12 },
+  categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  typeReal: { backgroundColor: 'rgba(251, 191, 36, 0.2)' },
-  typeDigital: { backgroundColor: 'rgba(59, 130, 246, 0.2)' },
-  typeText: { fontSize: 9, fontWeight: 'bold' },
-  rewardName: { fontSize: 18, color: '#fff', fontWeight: 'bold', marginBottom: 4 },
-  rewardSubtitle: { fontSize: 12, color: '#64748b', marginBottom: 16 },
-  rewardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  costBox: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  costText: { color: '#fbbf24', fontSize: 18, fontWeight: 'bold' },
-  buyBtn: {
+    gap: 6,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 16,
-    minWidth: 60,
-    alignItems: 'center',
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+    marginRight: 8
   },
-  buyBtnActive: { backgroundColor: '#fbbf24' },
-  buyBtnDisabled: { backgroundColor: '#334155' },
-  buyBtnText: { fontWeight: 'bold', fontSize: 14, color: '#64748b' },
-  buyBtnTextActive: { color: '#0f172a' },
+  categoryButtonActive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 100,
+    backgroundColor: '#fbbf24',
+    marginRight: 8,
+    shadowColor: '#fbbf24',
+    shadowOpacity: 0.4,
+    shadowRadius: 10
+  },
+  categoryText: { color: 'rgba(255,255,255,0.9)', fontSize: 14, fontWeight: '600' },
+  categoryTextActive: { color: '#000', fontSize: 14, fontWeight: '700' },
+
+  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 16 },
+  card: {
+    width: (width - 48) / 2,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.2)',
+    overflow: 'hidden',
+    marginBottom: 8
+  },
+  cardDisabled: { opacity: 0.7 },
+  cardImageContainer: {
+    width: '100%',
+    aspectRatio: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative'
+  },
+  rarityBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    zIndex: 2
+  },
+  rarityText: { color: '#fbbf24', fontSize: 8, fontWeight: 'bold' },
+  cardContent: { padding: 12, gap: 8 },
+  cardTitle: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  cardCost: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  cardCostText: { color: '#fbbf24', fontSize: 14, fontWeight: 'bold' },
+  redeemButton: {
+    width: '100%',
+    paddingVertical: 10,
+    borderRadius: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4
+  },
+  redeemActive: { backgroundColor: '#fbbf24' },
+  redeemDisabled: { backgroundColor: 'rgba(255,255,255,0.1)' },
+  redeemText: { fontSize: 12, fontWeight: 'bold' },
+  redeemTextActive: { color: '#000' },
+  redeemTextDisabled: { color: 'rgba(255,255,255,0.4)' },
 });

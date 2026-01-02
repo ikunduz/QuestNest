@@ -1,18 +1,18 @@
-
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Animated, Easing } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Animated, Easing, Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import {
-  Shield, Sparkles, Camera, CheckCircle2, ChevronRight, Trophy, Sword,
-  UserCircle, Wand2, Target, Heart, Zap
+  Shield, Sparkles, Trophy, Sword, UserCircle, Target, Wand2, Bell, Menu, Map, Store, User, ChevronRight, Check,
+  BookOpen, Star, Repeat, CalendarCheck
 } from 'lucide-react-native';
-import { XPBar } from '../components/XPBar';
-import { GameButton } from '../components/GameButton';
-import { FloatingHearts } from '../components/XPGainAnimation';
-import { ConfettiEffect } from '../components/ConfettiEffect';
 import { AvatarSelector } from '../components/AvatarSelector';
 import { CATEGORY_METADATA } from '../constants';
 import { Quest, UserState } from '../types';
 import { getWisdomMessage } from '../services/geminiService';
+import { getAvatarEmoji } from '../constants/avatars';
+
+const { width } = Dimensions.get('window');
 
 interface ChildDashboardProps {
   user: UserState;
@@ -21,297 +21,377 @@ interface ChildDashboardProps {
   onUpdateUser: (updates: Partial<UserState>) => void;
 }
 
-const HERO_CLASSES = [
-  { id: 'knight', icon: <Shield size={32} color="#ffffff" />, label: 'Şövalye', color: '#2563eb' },
-  { id: 'mage', icon: <Wand2 size={32} color="#ffffff" />, label: 'Büyücü', color: '#9333ea' },
-  { id: 'ranger', icon: <Target size={32} color="#ffffff" />, label: 'Okçu', color: '#059669' }
-];
-
 export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, onComplete, onUpdateUser }) => {
   const [wisdom, setWisdom] = useState<string>("Yükleniyor...");
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
-  const [showProfile, setShowProfile] = useState(false);
-  const [isBlessingActive, setIsBlessingActive] = useState(false);
+  const [showAvatarSelector, setShowAvatarSelector] = useState(false);
+  const xpAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     getWisdomMessage(user.name, user.level).then(setWisdom);
   }, [user.name, user.level]);
 
   useEffect(() => {
-    if (user.lastBlessingFrom) {
-      setIsBlessingActive(true);
-      const timer = setTimeout(() => setIsBlessingActive(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [user.lastBlessingFrom]);
+    // Animate XP Bar on mount or update
+    Animated.timing(xpAnim, {
+      toValue: (user.xp % 100) / 100, // Assuming 100 XP per level for simplicity in visual
+      duration: 1500,
+      easing: Easing.out(Easing.exp),
+      useNativeDriver: false,
+    }).start();
+  }, [user.xp]);
 
-  const activeQuests = quests.filter(q => q.status === 'active');
-  const pendingQuests = quests.filter(q => q.status === 'pending_approval');
-  const completedQuests = quests.filter(q => q.status === 'completed').slice(0, 3);
+  // Routine Logic: Check if routine was completed TODAY.
+  const isRoutineCompletedToday = (quest: Quest) => {
+    if (!quest.completedAt) return false;
 
-  const startCamera = async () => {
-    // Avatar seçici'ye geçiş yapılıyor
-    setShowAvatarSelector(true);
+    const today = new Date();
+    const completedDate = new Date(quest.completedAt);
+
+    return (
+      today.getDate() === completedDate.getDate() &&
+      today.getMonth() === completedDate.getMonth() &&
+      today.getFullYear() === completedDate.getFullYear()
+    );
   };
 
-  const [showAvatarSelector, setShowAvatarSelector] = useState(false);
+  const dailyQuests = quests.filter(q => q.status === 'active' && q.type !== 'routine');
+  const routineQuests = quests.filter(q => q.type === 'routine');
+
+  // Separate routines
+  // Todo: Active, OR (Completed/Pending but NOT today)
+  const routinesTodo = routineQuests.filter(q => q.status === 'active' || (q.status === 'completed' && !isRoutineCompletedToday(q)));
+
+  // Done/Pending: (Status pending) OR (Status completed AND today)
+  const routinesDoneOrPending = routineQuests.filter(q => q.status === 'pending_approval' || (q.status === 'completed' && isRoutineCompletedToday(q)));
+
+  const pendingQuests = quests.filter(q => q.status === 'pending_approval' && q.type !== 'routine');
 
   const handleAvatarSelect = (avatarId: string, photoUrl?: string) => {
-    if (photoUrl) {
-      onUpdateUser({ avatar: photoUrl });
-    } else if (avatarId) {
-      // Avatar emoji'sini kaydet (veya avatar id'yi)
-      onUpdateUser({ avatar: avatarId });
-    }
+    if (photoUrl) onUpdateUser({ avatar: photoUrl });
+    else if (avatarId) onUpdateUser({ avatar: avatarId });
     setShowAvatarSelector(false);
     Alert.alert('✅', 'Avatar güncellendi!');
   };
 
+  const getNextLevelXP = (level: number) => level * 100;
+  const currentLevelXP = user.level * 100; // Simplified for visual
+  const xpPercentage = Math.min((user.xp / getNextLevelXP(user.level)) * 100, 100);
+
   if (showAvatarSelector) {
     return (
-      <ScrollView style={styles.profileContainer}>
+      <View style={styles.container}>
+        <LinearGradient colors={['#1a1f2e', '#111827']} style={StyleSheet.absoluteFill} />
         <View style={styles.header}>
-          <Text style={styles.title}>AVATAR SEÇ</Text>
-          <GameButton variant="ghost" onPress={() => setShowAvatarSelector(false)}>
-            <ChevronRight color="#64748b" style={{ transform: [{ rotate: '180deg' }] }} />
-          </GameButton>
-        </View>
-        <AvatarSelector
-          currentAvatar={user.avatar}
-          userRole="child"
-          onSelect={handleAvatarSelect}
-        />
-      </ScrollView>
-    );
-  }
-
-  if (showProfile) {
-    return (
-      <View style={styles.profileContainer}>
-        <View style={styles.header}>
-          <Text style={styles.title}>KAHRAMAN PORTRESİ</Text>
-          <GameButton variant="ghost" onPress={() => setShowProfile(false)}>
-            <ChevronRight color="#64748b" style={{ transform: [{ rotate: '180deg' }] }} />
-          </GameButton>
-        </View>
-
-        <View style={styles.profileBox}>
-          <View style={styles.avatarCircle}>
-            {user.avatar ? (
-              <Image source={{ uri: user.avatar }} style={styles.avatarImg} />
-            ) : (
-              <UserCircle color="#fbbf24" size={64} />
-            )}
-          </View>
-          <GameButton onPress={startCamera} style={{ width: '100%' }}>AVATAR DEĞİŞTİR</GameButton>
-        </View>
-
-        <View style={styles.classGrid}>
-          {HERO_CLASSES.map(hc => (
-            <TouchableOpacity
-              key={hc.id}
-              onPress={() => onUpdateUser({ heroClass: hc.id as any })}
-              style={[
-                styles.classCard,
-                user.heroClass === hc.id ? styles.classCardActive : styles.classCardInactive
-              ]}
-            >
-              {hc.icon}
-              <Text style={styles.classLabel}>{hc.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    );
-  }
-
-  if (selectedQuest) {
-    return (
-      <View style={styles.questDetailContainer}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => setSelectedQuest(null)} style={styles.backBtn}>
-            <ChevronRight color="#fbbf24" style={{ transform: [{ rotate: '180deg' }] }} />
-            <Text style={styles.backText}>Geri</Text>
+          <TouchableOpacity onPress={() => setShowAvatarSelector(false)} style={styles.backButton}>
+            <ChevronRight color="#fbbf24" size={24} style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
-          <Text style={styles.title}>GÖREV AYRINTILARI</Text>
+          <Text style={styles.headerTitle}>AVATAR SEÇ</Text>
         </View>
-
-        <View style={styles.questCard}>
-          <View style={[styles.questIconBox, { backgroundColor: CATEGORY_METADATA[selectedQuest.category].color }]}>
-            {React.cloneElement(CATEGORY_METADATA[selectedQuest.category].icon as React.ReactElement, { size: 40, color: '#fff' } as any)}
-          </View>
-          <Text style={styles.questTitle}>{selectedQuest.titleKey}</Text>
-          <Text style={styles.questDesc}>"{selectedQuest.description}"</Text>
-
-          <View style={styles.rewardBox}>
-            <Text style={styles.rewardLabel}>KAZANIM</Text>
-            <Text style={styles.rewardValue}>
-              <Sparkles color="#fbbf24" size={24} /> {selectedQuest.xpReward} XP
-            </Text>
-          </View>
-
-          <GameButton style={{ width: '100%' }} onPress={() => { onComplete(selectedQuest.id); setSelectedQuest(null); }}>
-            GÖREVİ BİLDİR
-          </GameButton>
-        </View>
+        <AvatarSelector currentAvatar={user.avatar} userRole="child" onSelect={handleAvatarSelect} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-      {/* Animated Blessing Hearts */}
-      <FloatingHearts visible={isBlessingActive} from={user.lastBlessingFrom} />
+    <View style={styles.container}>
+      {/* Ambient Background Layer */}
+      <LinearGradient
+        colors={['#1e1b4b', '#0f172a', '#020617']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
 
-      {/* Compact Hero Stats */}
-      <View style={styles.statsCard}>
-        <View style={styles.statsHeader}>
-          <TouchableOpacity onPress={() => setShowProfile(true)} style={styles.avatarContainer}>
-            <View style={styles.avatarInner}>
-              {user.avatar ? (
-                <Image source={{ uri: user.avatar }} style={styles.avatarSmall} />
-              ) : (
-                <UserCircle color="#fbbf24" size={32} />
-              )}
-            </View>
-          </TouchableOpacity>
-          <View style={styles.heroInfo}>
-            <Text style={styles.heroName} numberOfLines={1}>{user.name}</Text>
-            <View style={styles.heroSubInfo}>
-              <View style={styles.classBadge}>
-                <Text style={styles.classBadgeText}>
-                  {user.heroClass === 'mage' ? '🧙' : user.heroClass === 'ranger' ? '🏹' : '🛡️'} Lv.{user.level}
-                </Text>
+      {/* Scrollable Content */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+        {/* Header Section Redesign */}
+        <View style={styles.headerCardContainer}>
+          <BlurView intensity={40} tint="dark" style={styles.headerGlassCard}>
+            <View style={styles.profileRow}>
+              <TouchableOpacity onPress={() => setShowAvatarSelector(true)} style={styles.avatarWrapperLarge}>
+                <LinearGradient
+                  colors={['#f59e0b', '#fbbf24', '#fff7ed']}
+                  style={styles.avatarBorderLarge}
+                >
+                  {user.avatar ? (
+                    user.avatar.startsWith('http') || user.avatar.startsWith('file') ? (
+                      <Image source={{ uri: user.avatar }} style={styles.avatarImageLarge} />
+                    ) : (
+                      <View style={styles.avatarEmojiContainerLarge}>
+                        <Text style={styles.avatarEmojiLarge}>{getAvatarEmoji(user.avatar)}</Text>
+                      </View>
+                    )
+                  ) : (
+                    <UserCircle size={60} color="#1f2937" fill="#fbbf24" />
+                  )}
+                </LinearGradient>
+                <View style={styles.levelBadgeLarge}>
+                  <Text style={styles.levelTextLarge}>{user.level.toString()}</Text>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.userInfoExpanded}>
+                <Text style={styles.userNameLarge}>Kahraman {user.name}</Text>
+                <View style={styles.titleBadge}>
+                  <Text style={styles.userTitleLarge}>
+                    {user.heroClass === 'mage' ? 'Çırak Büyücü' : user.heroClass === 'ranger' ? 'Acemi Okçu' : 'Şövalye Yardımcısı'}
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
-          <View style={styles.xpBadge}>
-            <Sparkles color="#fbbf24" size={14} />
-            <Text style={styles.xpBadgeText}>{user.xp}</Text>
-          </View>
+
+            <View style={styles.headerDivider} />
+
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <LinearGradient colors={['#fbbf24', '#d97706']} style={styles.statIconCircle}>
+                  <Text style={styles.statEmoji}>🪙</Text>
+                </LinearGradient>
+                <View>
+                  <Text style={styles.statLabelHeader}>ALTIN</Text>
+                  <Text style={styles.statValueHeader}>{user.xp * 5}</Text>
+                </View>
+              </View>
+
+              <View style={styles.statItem}>
+                <TouchableOpacity style={styles.headerActionButton}>
+                  <Bell size={20} color="#fbbf24" />
+                  <View style={styles.notifBadge} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.headerActionButton}>
+                  <Menu size={20} color="#fbbf24" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BlurView>
         </View>
-        <XPBar xp={user.xp} level={user.level} />
-      </View>
 
-      {/* AI Wisdom - Compact */}
-      <View style={styles.wisdomCard}>
-        <Text style={styles.wisdomText} numberOfLines={2}>💡 "{wisdom}"</Text>
-      </View>
-
-      {/* Quest List */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Sword size={18} color="#fbbf24" />
-          <Text style={styles.sectionTitle}>AKTİF GÖREVLER</Text>
-          <Text style={styles.sectionCount}>{activeQuests.length}</Text>
-        </View>
-
-        {activeQuests.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <CheckCircle2 size={32} color="#10b981" />
-            <Text style={styles.emptyText}>Tüm görevler tamamlandı! 🎉</Text>
+        {/* XP Card */}
+        <BlurView intensity={30} tint="dark" style={styles.xpCard}>
+          <View style={styles.xpCardHeader}>
+            <View>
+              <Text style={styles.xpLabel}>XP İlerlemesi</Text>
+              <Text style={styles.xpValue}>{user.xp} <Text style={styles.xpTotal}>/ {getNextLevelXP(user.level)} XP</Text></Text>
+            </View>
+            <Text style={styles.xpRemaining}>Seviye {user.level + 1} için {getNextLevelXP(user.level) - user.xp} XP</Text>
           </View>
-        ) : (
-          activeQuests.map((quest) => (
-            <TouchableOpacity
-              key={quest.id}
-              onPress={() => setSelectedQuest(quest)}
-              style={styles.questListItem}
+          <View style={styles.xpBarContainer}>
+            <Animated.View
+              style={[
+                styles.xpBarFill,
+                {
+                  width: xpAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%']
+                  })
+                }
+              ]}
             >
-              <View style={[styles.questListIcon, { backgroundColor: CATEGORY_METADATA[quest.category].color + '30' }]}>
-                {React.cloneElement(CATEGORY_METADATA[quest.category].icon as React.ReactElement, { size: 20, color: CATEGORY_METADATA[quest.category].color } as any)}
-              </View>
-              <View style={styles.questListText}>
-                <Text style={styles.questListTitle} numberOfLines={1}>{quest.titleKey}</Text>
-                <Text style={styles.questListXP}>+{quest.xpReward} XP</Text>
-              </View>
-              <ChevronRight color="#475569" size={18} />
-            </TouchableOpacity>
-          ))
-        )}
-      </View>
-
-      {/* Pending Quests */}
-      {pendingQuests.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Trophy size={18} color="#f59e0b" />
-            <Text style={styles.sectionTitle}>ONAY BEKLİYOR</Text>
-            <Text style={[styles.sectionCount, { backgroundColor: '#f59e0b' }]}>{pendingQuests.length}</Text>
+              <LinearGradient
+                colors={['#d97706', '#fbbf24', '#fff7ed', '#fbbf24']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
           </View>
-          {pendingQuests.map((quest) => (
-            <View key={quest.id} style={[styles.questListItem, { borderColor: '#f59e0b', borderWidth: 1 }]}>
-              <View style={[styles.questListIcon, { backgroundColor: 'rgba(245, 158, 11, 0.2)' }]}>
-                <Trophy size={20} color="#f59e0b" />
+        </BlurView>
+
+        {/* Routines / Habits Section */}
+        {routineQuests.length > 0 && (
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleContainer}>
+              <View style={[styles.sectionIndicator, { backgroundColor: '#8b5cf6' }]} />
+              <Text style={styles.sectionTitle}>Günlük Rutinler</Text>
+            </View>
+          </View>
+        )}
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.habitsScroll}>
+          {routinesTodo.map((quest) => (
+            <TouchableOpacity key={quest.id} onPress={() => onComplete(quest.id)}>
+              <BlurView intensity={20} tint="light" style={styles.habitCard}>
+                <View style={[styles.habitIconBox, { backgroundColor: CATEGORY_METADATA[quest.category].color + '20' }]}>
+                  {React.cloneElement(CATEGORY_METADATA[quest.category].icon as React.ReactElement, { size: 24, color: CATEGORY_METADATA[quest.category].color } as any)}
+                </View>
+                <Text style={styles.habitTitle}>{quest.titleKey}</Text>
+                <View style={styles.habitXpBadge}>
+                  <Text style={styles.habitXpText}>+{quest.xpReward} XP</Text>
+                </View>
+              </BlurView>
+            </TouchableOpacity>
+          ))}
+          {routinesDoneOrPending.map((quest) => (
+            <View key={quest.id} style={[styles.habitCard, styles.habitCardDone]}>
+              <View style={[styles.habitIconBox, { backgroundColor: quest.status === 'pending_approval' ? '#a855f720' : '#10b98120' }]}>
+                {quest.status === 'pending_approval' ? <Trophy size={24} color="#a855f7" /> : <Check size={24} color="#10b981" />}
               </View>
-              <View style={styles.questListText}>
-                <Text style={styles.questListTitle} numberOfLines={1}>{quest.titleKey}</Text>
-                <Text style={[styles.questListXP, { color: '#f59e0b' }]}>Ebeveyn onayı bekleniyor...</Text>
-              </View>
+              <Text style={[styles.habitTitle, styles.habitTitleDone]}>{quest.titleKey}</Text>
+              <Text style={[styles.habitDoneText, { color: quest.status === 'pending_approval' ? '#a855f7' : '#10b981' }]}>
+                {quest.status === 'pending_approval' ? 'Onay Bekliyor' : 'Tamamlandı'}
+              </Text>
             </View>
           ))}
-        </View>
-      )}
+        </ScrollView>
 
-      {/* Bottom spacing for navbar */}
-      <View style={{ height: 100 }} />
-    </ScrollView>
+
+        {/* Daily Quests Section */}
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleContainer}>
+            <View style={styles.sectionIndicator} />
+            <Text style={styles.sectionTitle}>Günlük Görevler</Text>
+          </View>
+          <View style={styles.progressBadge}>
+            <Text style={styles.progressText}>{dailyQuests.filter(q => q.status === 'completed').length}/{dailyQuests.length} Tamamlandı</Text>
+          </View>
+        </View>
+
+        <View style={styles.questList}>
+          {dailyQuests.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Check size={40} color="#10b981" />
+              <Text style={styles.emptyStateText}>Tüm günlük görevler tamam!</Text>
+            </View>
+          ) : (
+            dailyQuests.map((quest) => (
+              <BlurView key={quest.id} intensity={20} tint="light" style={styles.questItem}>
+                <View style={[styles.questIconBox, { backgroundColor: CATEGORY_METADATA[quest.category].color + '20', borderColor: CATEGORY_METADATA[quest.category].color + '40' }]}>
+                  {React.cloneElement(CATEGORY_METADATA[quest.category].icon as React.ReactElement, { size: 28, color: CATEGORY_METADATA[quest.category].color } as any)}
+                </View>
+                <View style={styles.questInfo}>
+                  <Text style={styles.questTitleItem}>{quest.titleKey}</Text>
+                  <Text style={styles.questDescItem}>{quest.description}</Text>
+                  <View style={styles.questTags}>
+                    <View style={styles.xpTag}>
+                      <Text style={styles.xpTagText}>{quest.xpReward} XP</Text>
+                    </View>
+                    <View style={[styles.typeTag, { backgroundColor: CATEGORY_METADATA[quest.category].color + '20', borderColor: CATEGORY_METADATA[quest.category].color + '40' }]}>
+                      <Text style={[styles.typeTagText, { color: CATEGORY_METADATA[quest.category].color }]}>{quest.category}</Text>
+                    </View>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={() => onComplete(quest.id)} style={styles.claimButton}>
+                  <LinearGradient colors={['#fbbf24', '#f59e0b']} style={styles.claimButtonGradient}>
+                    <Text style={styles.claimButtonText}>Tamamla</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </BlurView>
+            ))
+          )}
+
+          {/* Pending Quests */}
+          {pendingQuests.length > 0 && (
+            <>
+              <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+                <View style={styles.sectionTitleContainer}>
+                  <View style={[styles.sectionIndicator, { backgroundColor: '#a855f7' }]} />
+                  <Text style={styles.sectionTitle}>Onay Bekliyor</Text>
+                </View>
+              </View>
+              {pendingQuests.map((quest) => (
+                <BlurView key={quest.id} intensity={10} tint="light" style={[styles.questItem, { opacity: 0.8 }]}>
+                  <View style={[styles.questIconBox, { backgroundColor: '#a855f720', borderColor: '#a855f740' }]}>
+                    <Trophy size={28} color="#a855f7" />
+                  </View>
+                  <View style={styles.questInfo}>
+                    <Text style={styles.questTitleItem}>{quest.titleKey}</Text>
+                    <Text style={styles.questDescItem}>Ebeveyn onayı bekleniyor...</Text>
+                  </View>
+                  <View style={styles.statusIcon}>
+                    <Text>⏳</Text>
+                  </View>
+                </BlurView>
+              ))}
+            </>
+          )}
+        </View>
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f172a' },
-  contentContainer: { padding: 16, paddingBottom: 0 },
-  profileContainer: { flex: 1, backgroundColor: '#0f172a', padding: 20 },
-  questDetailContainer: { flex: 1, backgroundColor: '#0f172a', padding: 16 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  title: { fontSize: 20, color: '#fbbf24', fontWeight: 'bold' },
-  profileBox: { backgroundColor: '#1e293b', padding: 24, borderRadius: 24, alignItems: 'center', marginBottom: 20 },
-  avatarCircle: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center', marginBottom: 16, overflow: 'hidden', borderWidth: 3, borderColor: '#fbbf24' },
-  avatarImg: { width: '100%', height: '100%' },
-  classGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-  classCard: { flex: 1, padding: 12, borderRadius: 12, alignItems: 'center', marginHorizontal: 4, borderWidth: 2 },
-  classCardActive: { borderColor: '#fbbf24', backgroundColor: 'rgba(251, 191, 36, 0.1)' },
-  classCardInactive: { borderColor: '#334155', backgroundColor: '#1e293b', opacity: 0.5 },
-  classLabel: { color: '#fff', fontSize: 9, fontWeight: 'bold', marginTop: 6 },
-  backBtn: { flexDirection: 'row', alignItems: 'center' },
-  backText: { color: '#fbbf24', marginLeft: 4, fontSize: 14 },
-  questCard: { backgroundColor: '#1e293b', padding: 24, borderRadius: 24, alignItems: 'center' },
-  questIconBox: { width: 64, height: 64, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  questTitle: { fontSize: 20, color: '#fff', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
-  questDesc: { fontSize: 14, color: '#cbd5e1', textAlign: 'center', marginBottom: 20, fontStyle: 'italic' },
-  rewardBox: { backgroundColor: '#0f172a', padding: 14, borderRadius: 16, width: '100%', alignItems: 'center', marginBottom: 20 },
-  rewardLabel: { fontSize: 9, color: '#fbbf24', fontWeight: 'bold', marginBottom: 4, letterSpacing: 1 },
-  rewardValue: { fontSize: 20, color: '#fbbf24', fontWeight: 'bold' },
-  statsCard: { backgroundColor: 'rgba(30, 41, 59, 0.7)', padding: 14, borderRadius: 20, marginBottom: 12 },
-  statsHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  avatarContainer: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#fbbf24', padding: 2 },
-  avatarInner: { flex: 1, backgroundColor: '#0f172a', borderRadius: 10, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  avatarSmall: { width: '100%', height: '100%' },
-  heroInfo: { flex: 1, marginLeft: 12 },
-  heroName: { fontSize: 18, color: '#fff', fontWeight: 'bold' },
-  heroSubInfo: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  classBadge: { backgroundColor: 'rgba(251, 191, 36, 0.15)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
-  classBadgeText: { color: '#fbbf24', fontSize: 11, fontWeight: 'bold' },
-  levelInfo: { color: '#94a3b8', fontSize: 11, marginLeft: 8 },
-  xpBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(251, 191, 36, 0.15)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
-  xpBadgeText: { color: '#fbbf24', fontSize: 14, fontWeight: 'bold', marginLeft: 4 },
-  wisdomCard: { backgroundColor: 'rgba(30, 27, 75, 0.8)', borderLeftWidth: 3, borderLeftColor: '#818cf8', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, marginBottom: 16 },
-  wisdomLabel: { fontSize: 9, color: '#818cf8', fontWeight: 'bold', marginBottom: 4, letterSpacing: 1 },
-  wisdomText: { color: '#e2e8f0', fontSize: 13, lineHeight: 18 },
-  section: { marginBottom: 12 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: 14, color: '#fff', fontWeight: 'bold', marginLeft: 8, flex: 1 },
-  sectionCount: { backgroundColor: '#fbbf24', color: '#0f172a', fontSize: 11, fontWeight: 'bold', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, overflow: 'hidden' },
-  emptyBox: { paddingVertical: 40, backgroundColor: 'rgba(30, 41, 59, 0.3)', borderRadius: 16, borderStyle: 'dashed', borderWidth: 2, borderColor: '#1e293b', justifyContent: 'center', alignItems: 'center' },
-  emptyText: { color: '#94a3b8', fontSize: 14, fontWeight: 'bold', marginTop: 8 },
-  questListItem: { backgroundColor: '#1e293b', padding: 12, borderRadius: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  questListIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#334155', justifyContent: 'center', alignItems: 'center' },
-  questListText: { flex: 1, marginLeft: 12 },
-  questListTitle: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
-  questListXP: { color: '#fbbf24', fontSize: 11, fontWeight: 'bold', marginTop: 2 },
-  blessingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.9)', zIndex: 1000, justifyContent: 'center', alignItems: 'center' },
-  blessingTitle: { fontSize: 20, color: '#fff', fontWeight: 'bold', marginTop: 12 },
-  blessingSub: { fontSize: 16, color: '#fbbf24', fontWeight: 'bold' },
-});
+  scrollContent: { padding: 16, paddingBottom: 100 },
+  headerCardContainer: { paddingHorizontal: 16, marginTop: 20, marginBottom: 24 },
+  headerGlassCard: { borderRadius: 32, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+  profileRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  avatarWrapperLarge: { position: 'relative' },
+  avatarBorderLarge: { width: 100, height: 100, borderRadius: 50, padding: 4, justifyContent: 'center', alignItems: 'center', shadowColor: '#fbbf24', shadowOpacity: 0.5, shadowRadius: 15, elevation: 10 },
+  avatarImageLarge: { width: '100%', height: '100%', borderRadius: 50, backgroundColor: '#1f2937' },
+  avatarEmojiContainerLarge: { width: '100%', height: '100%', borderRadius: 50, backgroundColor: '#1f2937', justifyContent: 'center', alignItems: 'center' },
+  avatarEmojiLarge: { fontSize: 50 },
+  levelBadgeLarge: { position: 'absolute', bottom: -2, right: -2, backgroundColor: '#f59e0b', width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#111827', zIndex: 10 },
+  levelTextLarge: { fontSize: 14, fontWeight: '900', color: '#000' },
+  userInfoExpanded: { flex: 1, marginLeft: 20, justifyContent: 'center' },
+  userNameLarge: { color: '#fff', fontSize: 26, fontWeight: '900', letterSpacing: 0.5 },
+  titleBadge: { backgroundColor: 'rgba(251, 191, 36, 0.1)', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginTop: 6, borderWidth: 1, borderColor: 'rgba(251, 191, 36, 0.2)' },
+  userTitleLarge: { color: '#fbbf24', fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
+  headerDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.1)', marginBottom: 20 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  statItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  statIconCircle: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', shadowColor: '#fbbf24', shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  statEmoji: { fontSize: 20 },
+  statLabelHeader: { color: '#94a3b8', fontSize: 10, fontWeight: 'bold', letterSpacing: 1 },
+  statValueHeader: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  headerActionButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', marginLeft: 12 },
+  notifBadge: { position: 'absolute', top: 12, right: 12, width: 8, height: 8, backgroundColor: '#ef4444', borderRadius: 4, borderWidth: 1.5, borderColor: '#111827' },
 
+  xpCard: { padding: 20, borderRadius: 24, overflow: 'hidden', marginBottom: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  xpCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12 },
+  xpLabel: { color: '#94a3b8', fontSize: 12, fontWeight: '600', marginBottom: 4 },
+  xpValue: { color: '#fff', fontSize: 24, fontWeight: '800' },
+  xpTotal: { color: '#64748b', fontSize: 14, fontWeight: '500' },
+  xpRemaining: { color: '#fbbf24', fontSize: 12, fontWeight: '600' },
+  xpBarContainer: { height: 16, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 8, padding: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  xpBarFill: { height: '100%', borderRadius: 6, overflow: 'hidden' },
+
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingHorizontal: 4 },
+  sectionTitleContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionIndicator: { width: 4, height: 24, backgroundColor: '#fbbd23', borderRadius: 2, shadowColor: '#fbbd23', shadowOpacity: 0.8, shadowRadius: 10, elevation: 5 },
+  sectionTitle: { fontSize: 20, fontWeight: '700', color: '#fff' },
+  progressBadge: { backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  progressText: { color: '#94a3b8', fontSize: 12, fontWeight: '500' },
+
+  habitsScroll: { paddingHorizontal: 4, gap: 12, marginBottom: 24 },
+  habitCard: { width: 110, height: 130, padding: 12, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'space-between', overflow: 'hidden' },
+  habitCardDone: { opacity: 0.6, backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.2)' },
+  habitIconBox: { width: 44, height: 44, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  habitTitle: { color: '#fff', fontSize: 11, fontWeight: 'bold', textAlign: 'center', height: 32 },
+  habitTitleDone: { color: '#94a3b8', textDecorationLine: 'line-through' },
+  habitXpBadge: { backgroundColor: '#fbbf24', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+  habitXpText: { color: '#000', fontSize: 10, fontWeight: '900' },
+  habitDoneText: { color: '#10b981', fontSize: 10, fontWeight: 'bold' },
+
+  questList: { gap: 12 },
+  questItem: { borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  questIconBox: { width: 56, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+  questInfo: { flex: 1, gap: 4 },
+  questTitleItem: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  questDescItem: { color: '#94a3b8', fontSize: 12 },
+  questTags: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  xpTag: { backgroundColor: '#fbbf24', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  xpTagText: { color: '#000', fontSize: 10, fontWeight: 'bold' },
+  typeTag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, borderWidth: 1, backgroundColor: 'transparent' },
+  typeTagText: { fontSize: 10, fontWeight: 'bold', textTransform: 'capitalize' },
+  claimButton: { overflow: 'hidden', borderRadius: 20 },
+  claimButtonGradient: { paddingHorizontal: 20, paddingVertical: 10, justifyContent: 'center', alignItems: 'center' },
+  claimButtonText: { color: '#000', fontWeight: 'bold', fontSize: 14 },
+  statusIcon: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+
+  emptyState: { alignItems: 'center', justifyContent: 'center', padding: 40, opacity: 0.5, gap: 12 },
+  emptyStateText: { color: '#fff', fontSize: 14, fontWeight: '500' },
+
+  fab: { position: 'absolute', bottom: 100, right: 24 },
+  fabGradient: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', shadowColor: '#fbbf24', shadowOpacity: 0.5, shadowRadius: 15, elevation: 10 },
+  fabIcon: { fontSize: 32, color: '#000', fontWeight: '300', marginTop: -4 },
+
+  header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingTop: 40, gap: 16 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#fbbf24' },
+  backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' }
+});

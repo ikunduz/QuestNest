@@ -1,391 +1,324 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
-import { Heart, Utensils, Gamepad2, MessageCircle, Gift, Sparkles } from 'lucide-react-native';
-import { AnimatedCreature } from '../components/AnimatedCreature';
-import { ConfettiEffect } from '../components/ConfettiEffect';
-import { GameButton } from '../components/GameButton';
-import { getTheme, ThemeType } from '../constants/themes';
-import { supabase } from '../services/supabaseClient';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, Animated, Easing, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { Heart, Zap, Dna, Utensils, Gamepad2, Moon, Sun, Coins, Lock, Timer, Sparkles } from 'lucide-react-native';
+import { UserState, PetState, EvolutionStage } from '../types';
+
+const { width } = Dimensions.get('window');
 
 interface CreatureScreenProps {
-    userId: string;
-    theme?: ThemeType;
+    user: UserState;
+    onUpdateUser: (updates: Partial<UserState>) => void;
+    pet: PetState;
+    onUpdatePet: (updates: Partial<PetState>) => void;
 }
 
-const CREATURE_TYPES = {
-    hero: { type: 'dragon', emoji: '🐉', name: 'Ejderha', babyEmoji: '🐣', eggEmoji: '🥚' },
-    fairy: { type: 'butterfly', emoji: '🦋', name: 'Kelebek', babyEmoji: '🐛', eggEmoji: '🥚' },
-    magical: { type: 'unicorn', emoji: '🦄', name: 'Unicorn', babyEmoji: '🐴', eggEmoji: '🥚' },
-    ocean: { type: 'dolphin', emoji: '🐬', name: 'Yunus', babyEmoji: '🐟', eggEmoji: '🥚' },
+// Evolution Stage Configuration
+const STAGE_CONFIG: Record<EvolutionStage, {
+    goal: number;
+    label: string;
+    img: string;
+    next?: EvolutionStage
+}> = {
+    egg: {
+        goal: 500,
+        label: 'EJDERHA YUMURTASI',
+        img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYF_kG8r3ZlJ6o5UuE9Y6zD8RjF7d0V9A9I9q9B9C9D9E9F9G9H9I9J9K9L9M9N9O9P9Q9R9S9T9U9V9W9X9Y9Z', // Egg Placeholder
+        next: 'hatching'
+    },
+    hatching: {
+        goal: 0,
+        label: 'YUMURTA ÇATLIYOR...',
+        img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB_egg_hatching_placeholder', // Hatching placeholder
+        next: 'baby'
+    },
+    baby: {
+        goal: 1500,
+        label: 'BEBEK EJDERHA',
+        img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBtesTw0DmY0QUEiFlom1NAGjy49QWDhjWlrxBWEypzxTUqgmCw5Jq6vEUd527lJtDk97cmWYh9zcD7hzF6dpeUasOUVcJre9k-87hoMyGcGKJXqVpdPZVMs_SYrjOj4gqFJtrw9oN_myx5gDOV84WmZmRwRNKnjbIAcROIDmxudMht (Small Ignis)',
+        next: 'teen'
+    },
+    teen: {
+        goal: 3000,
+        label: 'GENÇ EJDERHA',
+        img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuTeenIgnisPlaceholder',
+        next: 'adult'
+    },
+    adult: {
+        goal: 10000,
+        label: 'YETİŞKİN EJDERHA',
+        img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAdultIgnisPlaceholder'
+    }
 };
 
-const STAGE_EMOJIS = ['🥚', '🐣', '🐲', '🐉', '👑'];
+// Evolution Duration (24 hours in MS)
+const EVOLUTION_DURATION = 24 * 60 * 60 * 1000;
+// const TEST_DURATION = 60 * 1000; // 1 minute for testing
 
-export const CreatureScreen: React.FC<CreatureScreenProps> = ({ userId, theme = 'hero' }) => {
-    const [creature, setCreature] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [isFeeding, setIsFeeding] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [showConfetti, setShowConfetti] = useState(false);
+export const CreatureScreen: React.FC<CreatureScreenProps> = ({ user, onUpdateUser, pet, onUpdatePet }) => {
+    const bounceAnim = useRef(new Animated.Value(0)).current;
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
+    const config = STAGE_CONFIG[pet.stage];
 
-    const themeData = getTheme(theme);
-    const creatureType = CREATURE_TYPES[theme];
-
+    // Handle Floating Animation
     useEffect(() => {
-        loadCreature();
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(bounceAnim, { toValue: -15, duration: 2500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+                Animated.timing(bounceAnim, { toValue: 0, duration: 2500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+            ])
+        ).start();
     }, []);
 
-    const loadCreature = async () => {
-        try {
-            const { data } = await supabase
-                .from('creatures')
-                .select('*')
-                .eq('user_id', userId)
-                .single();
+    // Handle Evolution Timer
+    useEffect(() => {
+        if (pet.evolutionStartTime) {
+            const interval = setInterval(() => {
+                const now = Date.now();
+                const diff = (pet.evolutionStartTime! + EVOLUTION_DURATION) - now;
 
-            if (data) {
-                setCreature(data);
-            } else {
-                const { data: newCreature } = await supabase
-                    .from('creatures')
-                    .insert({
-                        user_id: userId,
-                        creature_type: creatureType.type,
-                        name: creatureType.name,
-                        stage: 1,
-                        happiness: 100,
-                        hunger: 100,
-                        energy: 100,
-                        xp: 0,
-                    })
-                    .select()
-                    .single();
-                setCreature(newCreature);
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
+                if (diff <= 0) {
+                    clearInterval(interval);
+                    setTimeLeft(0);
+                    // Automatically evolve to baby if hatching is done
+                    if (pet.stage === 'hatching') {
+                        onUpdatePet({ stage: 'baby', evolutionStartTime: undefined, goldSpent: 0, evolution: 0 });
+                    }
+                } else {
+                    setTimeLeft(diff);
+                }
+            }, 1000);
+            return () => clearInterval(interval);
         }
+    }, [pet.evolutionStartTime, pet.stage]);
+
+    const formatTime = (ms: number) => {
+        const hours = Math.floor(ms / (1000 * 60 * 60));
+        const mins = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((ms % (1000 * 60)) / 1000);
+        return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const canDoAction = (lastActionAt: string | null, hoursRequired: number) => {
-        if (!lastActionAt) return true;
-        const diff = Date.now() - new Date(lastActionAt).getTime();
-        return diff >= hoursRequired * 60 * 60 * 1000;
-    };
+    const handleFeed = () => {
+        if (pet.stage === 'hatching') return;
 
-    const checkEvolution = async () => {
-        if (!creature) return;
-        // Her 100 XP'de seviye atla
-        const newStage = Math.min(5, Math.floor((creature.xp || 0) / 100) + 1);
-        if (newStage > creature.stage) {
-            setShowConfetti(true);
-            await supabase
-                .from('creatures')
-                .update({ stage: newStage })
-                .eq('id', creature.id);
-            Alert.alert('🎉 EVRİM!', `${creature.name} yeni bir seviyeye ulaştı!`);
-        }
-    };
+        const cost = 50;
+        const currentGold = user.xp * 5;
 
-    const handleFeed = async () => {
-        if (!canDoAction(creature?.last_fed_at, 4)) {
-            Alert.alert('🍽️ Tok!', 'Yaratığın şu an aç değil. Biraz bekle!');
+        if (currentGold < cost) {
+            Alert.alert("Yetersiz Altın!", "Gidip biraz görev tamamlamalıyız!");
             return;
         }
 
-        setIsFeeding(true);
-        try {
-            await supabase
-                .from('creatures')
-                .update({
-                    hunger: Math.min(100, creature.hunger + 25),
-                    xp: (creature.xp || 0) + 5,
-                    last_fed_at: new Date().toISOString()
-                })
-                .eq('id', creature.id);
+        // Deduct XP (currency)
+        onUpdateUser({ xp: Math.max(0, user.xp - (cost / 5)) });
 
-            await loadCreature();
-            await checkEvolution();
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setTimeout(() => setIsFeeding(false), 1000);
+        // Update Pet
+        const newGoldSpent = pet.goldSpent + cost;
+        const progress = Math.min(100, (newGoldSpent / config.goal) * 100);
+
+        let updates: Partial<PetState> = {
+            goldSpent: newGoldSpent,
+            evolution: progress,
+            happiness: Math.min(100, pet.happiness + 10)
+        };
+
+        if (progress >= 100 && config.next) {
+            updates.stage = config.next as EvolutionStage;
+            updates.evolutionStartTime = Date.now();
+            Alert.alert("EVRİM BAŞLIYOR!", "Yeterli altın harcandı! 24 saat sonra bir sonraki evrede görüşürüz.");
+        } else {
+            Alert.alert("Miam!", "Ignis beslendi! Bir sonraki evreye yaklaşıyoruz.");
         }
+
+        onUpdatePet(updates);
     };
 
-    const handlePlay = async () => {
-        if (!canDoAction(creature?.last_played_at, 2)) {
-            Alert.alert('😴 Yorgun!', 'Yaratığın biraz dinlenmeli!');
+    const handlePlay = () => {
+        if (pet.stage === 'hatching' || pet.stage === 'egg') {
+            Alert.alert("Henüz Değil", "Bu evrede oyun oynayamazsın!");
             return;
         }
-
-        setIsPlaying(true);
-        try {
-            await supabase
-                .from('creatures')
-                .update({
-                    happiness: Math.min(100, creature.happiness + 20),
-                    xp: (creature.xp || 0) + 10,
-                    last_played_at: new Date().toISOString()
-                })
-                .eq('id', creature.id);
-
-            await loadCreature();
-            await checkEvolution();
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setTimeout(() => setIsPlaying(false), 2000);
-        }
-    };
-
-    const handleTalk = async () => {
-        if (!canDoAction(creature?.last_talked_at, 1)) {
-            Alert.alert('💤', 'Yaratığın şu an dinleniyor!');
+        if (pet.energy < 20) {
+            Alert.alert("Yorgun", "Ignis'in dinlenmesi lazım.");
             return;
         }
-
-        try {
-            await supabase
-                .from('creatures')
-                .update({
-                    energy: Math.min(100, creature.energy + 15),
-                    xp: (creature.xp || 0) + 3,
-                    last_talked_at: new Date().toISOString()
-                })
-                .eq('id', creature.id);
-
-            await loadCreature();
-
-            const messages = [
-                '💕 Yaratığın seni çok seviyor!',
-                '🎵 Yaratığın mutlu şarkılar söylüyor!',
-                '✨ Yaratığın gözleri parlıyor!',
-                '🌟 Harika bir dostluğunuz var!',
-            ];
-            Alert.alert('💬', messages[Math.floor(Math.random() * messages.length)]);
-        } catch (e) {
-            console.error(e);
-        }
+        onUpdatePet({
+            energy: Math.max(0, pet.energy - 20),
+            happiness: Math.min(100, pet.happiness + 20)
+        });
     };
 
-    if (loading) {
-        return (
-            <View style={[styles.container, { backgroundColor: themeData.colors.background }]}>
-                <Text style={styles.loadingText}>Yaratığın uyanıyor...</Text>
-            </View>
-        );
-    }
-
-    if (!creature) {
-        return (
-            <View style={[styles.container, { backgroundColor: themeData.colors.background }]}>
-                <Text style={styles.loadingText}>Yaratık bulunamadı</Text>
-            </View>
-        );
-    }
-
-    const currentEmoji = creature.stage <= 1 ? creatureType.eggEmoji :
-        creature.stage === 2 ? creatureType.babyEmoji :
-            creatureType.emoji;
+    const handleRest = () => {
+        onUpdatePet({ energy: 100 });
+        Alert.alert("Zzz...", "Enerji toplandı!");
+    };
 
     return (
-        <ScrollView style={[styles.container, { backgroundColor: themeData.colors.background }]}>
-            <ConfettiEffect active={showConfetti} onComplete={() => setShowConfetti(false)} />
+        <View style={styles.container}>
+            <LinearGradient colors={['#1e1b4b', '#0f172a', '#020617']} style={StyleSheet.absoluteFill} />
 
-            {/* Header */}
-            <View style={styles.header}>
-                <Sparkles color={themeData.colors.accent} size={24} />
-                <Text style={[styles.title, { color: themeData.colors.accent }]}>
-                    {creature.name || creatureType.name}
-                </Text>
-                <View style={styles.xpBadge}>
-                    <Text style={styles.xpText}>⭐ {creature.xp || 0} XP</Text>
-                </View>
+            {/* HUD */}
+            <View style={styles.hudLayer}>
+                <BlurView intensity={30} tint="dark" style={styles.hudCard}>
+                    <View style={styles.hudProfile}>
+                        <LinearGradient colors={['#f59e0b', '#fbbf24']} style={styles.hudLvl}>
+                            <Text style={styles.hudLvlText}>{pet.level}</Text>
+                        </LinearGradient>
+                        <View>
+                            <Text style={styles.hudName}>{pet.name}</Text>
+                            <Text style={styles.hudType}>{config.label}</Text>
+                        </View>
+                    </View>
+                    <View style={styles.hudGold}>
+                        <Text style={styles.hudGoldText}>{user.xp * 5}</Text>
+                        <Coins size={16} color="#fbbf24" fill="#fbbf24" />
+                    </View>
+                </BlurView>
             </View>
 
-            {/* Animated Creature */}
-            <AnimatedCreature
-                emoji={currentEmoji}
-                stage={creature.stage}
-                happiness={creature.happiness}
-                isFeeding={isFeeding}
-                isPlaying={isPlaying}
-                size={140}
-            />
-
-            <Text style={styles.stageText}>
-                {STAGE_EMOJIS[creature.stage - 1]} Aşama {creature.stage}/5
-            </Text>
-
-            {/* Stats */}
-            <View style={styles.statsCard}>
-                <View style={styles.statRow}>
-                    <View style={styles.statIcon}>
-                        <Heart color="#f43f5e" size={18} />
-                    </View>
-                    <Text style={styles.statLabel}>Mutluluk</Text>
-                    <View style={styles.statBarBg}>
-                        <View style={[styles.statBarFill, { width: `${creature.happiness}%`, backgroundColor: '#f43f5e' }]} />
-                    </View>
-                    <Text style={styles.statValue}>{creature.happiness}%</Text>
-                </View>
-
-                <View style={styles.statRow}>
-                    <View style={styles.statIcon}>
-                        <Utensils color="#22c55e" size={18} />
-                    </View>
-                    <Text style={styles.statLabel}>Tokluk</Text>
-                    <View style={styles.statBarBg}>
-                        <View style={[styles.statBarFill, { width: `${creature.hunger}%`, backgroundColor: '#22c55e' }]} />
-                    </View>
-                    <Text style={styles.statValue}>{creature.hunger}%</Text>
-                </View>
-
-                <View style={styles.statRow}>
-                    <View style={styles.statIcon}>
-                        <Gift color="#3b82f6" size={18} />
-                    </View>
-                    <Text style={styles.statLabel}>Enerji</Text>
-                    <View style={styles.statBarBg}>
-                        <View style={[styles.statBarFill, { width: `${creature.energy}%`, backgroundColor: '#3b82f6' }]} />
-                    </View>
-                    <Text style={styles.statValue}>{creature.energy}%</Text>
-                </View>
+            {/* Main Visual */}
+            <View style={styles.scene}>
+                <View style={styles.glowEffect} />
+                <Animated.View style={[styles.creatureContainer, { transform: [{ translateY: bounceAnim }] }]}>
+                    {pet.stage === 'egg' ? (
+                        <View style={styles.eggContainer}>
+                            <Text style={{ fontSize: 120 }}>🥚</Text>
+                            <Sparkles size={40} color="#fbbf24" style={styles.eggSparkle} />
+                        </View>
+                    ) : (
+                        <Image source={{ uri: config.img }} style={styles.creatureImage} resizeMode="contain" />
+                    )}
+                </Animated.View>
+                <View style={styles.shadow} />
             </View>
 
-            {/* Action Buttons */}
-            <View style={styles.actions}>
-                <TouchableOpacity
-                    style={[styles.actionBtn, { borderColor: '#22c55e' }]}
-                    onPress={handleFeed}
-                >
-                    <Utensils color="#22c55e" size={28} />
-                    <Text style={[styles.actionLabel, { color: '#22c55e' }]}>BESLE</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.actionBtn, styles.actionBtnMain, { backgroundColor: themeData.colors.accent }]}
-                    onPress={handlePlay}
-                >
-                    <Gamepad2 color="#0f172a" size={32} />
-                    <Text style={[styles.actionLabel, { color: '#0f172a' }]}>OYNA</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.actionBtn, { borderColor: '#8b5cf6' }]}
-                    onPress={handleTalk}
-                >
-                    <MessageCircle color="#8b5cf6" size={28} />
-                    <Text style={[styles.actionLabel, { color: '#8b5cf6' }]}>KONUŞ</Text>
-                </TouchableOpacity>
+            {/* Evolution Info Card */}
+            <View style={styles.evolutionCardContainer}>
+                <BlurView intensity={40} tint="dark" style={styles.evolutionCard}>
+                    {pet.stage === 'hatching' ? (
+                        <View style={styles.timerSection}>
+                            <Timer size={32} color="#fbbf24" />
+                            <Text style={styles.timerValue}>{timeLeft ? formatTime(timeLeft) : '00:00:00'}</Text>
+                            <Text style={styles.timerSub}>GELİŞİM TAMAMLANIYOR...</Text>
+                        </View>
+                    ) : (
+                        <View style={styles.goalSection}>
+                            <View style={styles.goalHeader}>
+                                <Text style={styles.goalTitle}>GELİŞİM HEDEFİ</Text>
+                                <Text style={styles.goalValue}>{pet.goldSpent} / {config.goal} 🪙</Text>
+                            </View>
+                            <View style={styles.goalBarBG}>
+                                <View style={[styles.goalBarFill, { width: `${pet.evolution}%` }]}>
+                                    <LinearGradient colors={['#fbbf24', '#f59e0b']} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
+                                </View>
+                            </View>
+                        </View>
+                    )}
+                </BlurView>
             </View>
 
-            <View style={{ height: 100 }} />
-        </ScrollView>
+            {/* Action Panel */}
+            <View style={styles.bottomSection}>
+                <View style={styles.actionRow}>
+                    <View style={styles.sideActionContainer}>
+                        <TouchableOpacity
+                            style={[styles.miniActionBtn, pet.stage === 'hatching' && styles.disabledBtn]}
+                            onPress={handleFeed}
+                            disabled={pet.stage === 'hatching'}
+                        >
+                            <BlurView intensity={30} tint="light" style={styles.miniActionInner}>
+                                <Utensils size={20} color="#f59e0b" />
+                            </BlurView>
+                        </TouchableOpacity>
+                        <Text style={styles.miniLabel}>BESLE</Text>
+                        <Text style={styles.miniCost}>50g</Text>
+                    </View>
+
+                    <View style={styles.mainActionContainer}>
+                        <TouchableOpacity
+                            style={[styles.playBtn, (pet.stage === 'hatching' || pet.stage === 'egg') && styles.disabledBtn]}
+                            onPress={handlePlay}
+                            disabled={pet.stage === 'hatching' || pet.stage === 'egg'}
+                        >
+                            <LinearGradient colors={['#fbbf24', '#f59e0b']} style={styles.playInner}>
+                                {(pet.stage === 'hatching' || pet.stage === 'egg') ? <Lock size={28} color="#000" /> : <Gamepad2 size={28} color="#000" />}
+                            </LinearGradient>
+                        </TouchableOpacity>
+                        <Text style={styles.playLabel}>OYNA</Text>
+                        {(pet.stage === 'hatching' || pet.stage === 'egg') && (
+                            <Text style={styles.lockHint}>Yumurtadan çıkınca açılır!</Text>
+                        )}
+                    </View>
+
+                    <View style={styles.sideActionContainer}>
+                        <TouchableOpacity
+                            style={[styles.miniActionBtn, pet.stage === 'hatching' && styles.disabledBtn]}
+                            onPress={handleRest}
+                            disabled={pet.stage === 'hatching'}
+                        >
+                            <BlurView intensity={30} tint="light" style={styles.miniActionInner}>
+                                <Moon size={20} color="#a855f7" />
+                            </BlurView>
+                        </TouchableOpacity>
+                        <Text style={styles.miniLabel}>DİNLEN</Text>
+                        <Text style={styles.miniCost}>Bedava</Text>
+                    </View>
+                </View>
+            </View>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    loadingText: { color: '#94a3b8', textAlign: 'center', marginTop: 100 },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingTop: 60,
-        paddingHorizontal: 20,
-        gap: 8,
-    },
-    title: { fontSize: 24, fontWeight: 'bold' },
-    xpBadge: {
-        backgroundColor: '#1e293b',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        marginLeft: 'auto',
-    },
-    xpText: { color: '#fbbf24', fontWeight: 'bold', fontSize: 12 },
-    stageText: {
-        textAlign: 'center',
-        color: '#94a3b8',
-        fontSize: 14,
-        marginTop: 8,
-    },
-    statsCard: {
-        backgroundColor: '#1e293b',
-        marginHorizontal: 20,
-        marginTop: 24,
-        borderRadius: 24,
-        padding: 20,
-    },
-    statRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    statIcon: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#0f172a',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    statLabel: {
-        color: '#94a3b8',
-        fontSize: 12,
-        width: 60,
-        marginLeft: 12,
-    },
-    statBarBg: {
-        flex: 1,
-        height: 10,
-        backgroundColor: '#334155',
-        borderRadius: 5,
-        marginHorizontal: 12,
-        overflow: 'hidden',
-    },
-    statBarFill: {
-        height: '100%',
-        borderRadius: 5,
-    },
-    statValue: {
-        color: '#fff',
-        fontSize: 12,
-        fontWeight: 'bold',
-        width: 40,
-        textAlign: 'right',
-    },
-    actions: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 24,
-        paddingHorizontal: 20,
-        gap: 16,
-    },
-    actionBtn: {
-        width: 80,
-        height: 90,
-        backgroundColor: '#1e293b',
-        borderRadius: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#334155',
-    },
-    actionBtnMain: {
-        width: 100,
-        height: 100,
-        borderWidth: 0,
-    },
-    actionLabel: {
-        fontSize: 10,
-        fontWeight: 'bold',
-        marginTop: 8,
-        letterSpacing: 1,
-    },
+    container: { flex: 1, backgroundColor: '#020617' },
+    hudLayer: { position: 'absolute', top: 50, left: 20, right: 20, zIndex: 100 },
+    hudCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+    hudProfile: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    hudLvl: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)' },
+    hudLvlText: { color: '#000', fontWeight: '900', fontSize: 16 },
+    hudName: { color: '#fff', fontSize: 16, fontWeight: '800' },
+    hudType: { color: '#fbbf24', fontSize: 10, fontWeight: '700', letterSpacing: 1 },
+    hudGold: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(0,0,0,0.3)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16 },
+    hudGoldText: { color: '#fbbf24', fontWeight: '800', fontSize: 16 },
+
+    scene: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingBottom: 280 },
+    glowEffect: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(251, 191, 36, 0.1)', shadowColor: '#fbbf24', shadowOpacity: 0.5, shadowRadius: 60 },
+    creatureContainer: { width: 300, height: 300, justifyContent: 'center', alignItems: 'center', zIndex: 10 },
+    creatureImage: { width: '100%', height: '100%' },
+    eggContainer: { justifyContent: 'center', alignItems: 'center' },
+    eggSparkle: { position: 'absolute', top: 0, right: 20 },
+    shadow: { width: 140, height: 12, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 100, marginTop: -40, transform: [{ scaleY: 0.5 }] },
+
+    evolutionCardContainer: { position: 'absolute', bottom: 210, left: 20, right: 20, zIndex: 100 },
+    evolutionCard: { borderRadius: 24, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+    goalSection: { gap: 12 },
+    goalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    goalTitle: { color: '#94a3b8', fontSize: 11, fontWeight: 'bold', letterSpacing: 1.5 },
+    goalValue: { color: '#fff', fontSize: 14, fontWeight: '800' },
+    goalBarBG: { height: 16, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+    goalBarFill: { height: '100%', borderRadius: 8 },
+
+    timerSection: { alignItems: 'center', gap: 8 },
+    timerValue: { color: '#fff', fontSize: 32, fontWeight: '900', letterSpacing: 2 },
+    timerSub: { color: '#fbbf24', fontSize: 10, fontWeight: 'bold', letterSpacing: 1 },
+
+    bottomSection: { position: 'absolute', bottom: 110, left: 16, right: 16, zIndex: 100 },
+    actionRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 20 },
+
+    sideActionContainer: { alignItems: 'center', gap: 6 },
+    miniActionBtn: { width: 60, height: 60, borderRadius: 30, overflow: 'hidden' },
+    miniActionInner: { flex: 1, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    miniLabel: { color: '#fff', fontSize: 10, fontWeight: '900' },
+    miniCost: { color: '#fbbf24', fontSize: 9, fontWeight: '700' },
+
+    mainActionContainer: { alignItems: 'center', gap: 8 },
+    playBtn: { width: 90, height: 90, borderRadius: 45, overflow: 'hidden' },
+    playInner: { flex: 1, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: 'rgba(255,255,255,0.2)', shadowColor: '#fbbf24', shadowOpacity: 0.5, shadowRadius: 15, elevation: 12 },
+    playLabel: { color: '#fff', fontSize: 13, fontWeight: '900' },
+    lockHint: { color: '#fbbf24', fontSize: 10, fontWeight: 'bold', position: 'absolute', bottom: -20, width: 150, textAlign: 'center' },
+
+    disabledBtn: { opacity: 0.5 },
+
 });

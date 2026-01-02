@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Alert, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, Alert, Animated, Easing, KeyboardAvoidingView, Platform, Dimensions, Image, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { GameButton } from '../components/GameButton';
-import { Shield, Crown, Heart, Star, Sparkles } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { Crown, User, Shield, Key, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react-native';
 import { createFamily, createUser } from '../services/familyService';
+
+const { width, height } = Dimensions.get('window');
+
+const THEME_COLOR = '#fbbd23'; // Gold
 
 export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     const [familyName, setFamilyName] = useState('');
@@ -15,37 +20,55 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
 
     // Animations
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(30)).current;
+    const slideAnim = useRef(new Animated.Value(20)).current;
+    const progressAnim = useRef(new Animated.Value(0.25)).current;
 
     useEffect(() => {
+        // Reset and trigger animation on step change
+        fadeAnim.setValue(0);
+        slideAnim.setValue(20);
+
         Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-            Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.back(1.5)), useNativeDriver: true }),
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 600,
+                useNativeDriver: true
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 600,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true
+            }),
+            Animated.timing(progressAnim, {
+                toValue: step * 0.25,
+                duration: 400,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: false // Width doesn't support native driver
+            })
         ]).start();
     }, [step]);
 
     const handleNext = () => {
-        if (step === 1 && !familyName) {
-            Alert.alert("🏰", "Lütfen krallığına bir isim ver!");
+        if (step === 1 && !familyName.trim()) {
+            Alert.alert("🏰", "Her Krallığın bir isme ihtiyacı var, Majesteleri!");
             return;
         }
-        if (step === 2 && !parentName) {
-            Alert.alert("👑", "Adını girmeyi unuttun!");
+        if (step === 2 && !parentName.trim()) {
+            Alert.alert("👑", "Kraliyet kayıtları adınızı gerektiriyor!");
             return;
         }
-        if (step === 3 && !childName) {
-            Alert.alert("🦸", "Kahramanın adını gir!");
+        if (step === 3 && !childName.trim()) {
+            Alert.alert("⚔️", "Genç kahramanı tanımlıyın!");
             return;
         }
 
-        fadeAnim.setValue(0);
-        slideAnim.setValue(30);
         setStep(step + 1);
     };
 
     const handleSetup = async () => {
         if (pin.length !== 4) {
-            Alert.alert("🔐", "PIN 4 haneli olmalı!");
+            Alert.alert("🔐", "Kraliyet Mühürü (PIN) 4 hane olmalıdır!");
             return;
         }
 
@@ -83,203 +106,260 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
 
             Alert.alert(
                 "🎉 KRALLIK KURULDU!",
-                `Aile Kodun: ${familyCode}\n\nBu kodu diğer ebeveynlerle paylaş!`,
-                [{ text: "MACERAYA BAŞLA!", onPress: () => navigation.replace('Main', { initialUser: userState }) }]
+                `Aile Kodu: ${familyCode}\n\nBu kodu diğer ebeveynlerle paylaşın!`,
+                [{ text: "DÜNYAYA GİR", onPress: () => navigation.replace('Main', { initialUser: userState }) }]
             );
         } catch (error: any) {
-            Alert.alert("Hata", error.message);
+            Alert.alert("Error", error.message);
         } finally {
             setLoading(false);
         }
     };
 
-    const renderStep = () => {
+    const renderStepContent = () => {
         switch (step) {
             case 1:
-                return (
-                    <>
-                        <View style={styles.stepIcon}>
-                            <Crown color="#fbbf24" size={48} />
-                        </View>
-                        <Text style={styles.stepTitle}>KRALLIĞININ ADI NE OLSUN?</Text>
-                        <Text style={styles.stepSub}>Aileniz için eşsiz bir isim seçin</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={familyName}
-                            onChangeText={setFamilyName}
-                            placeholder="Örn: Kuzey Krallığı"
-                            placeholderTextColor="#64748b"
-                            autoFocus
-                        />
-                        <GameButton onPress={handleNext} style={styles.nextBtn}>
-                            DEVAM ET →
-                        </GameButton>
-                    </>
-                );
+                return {
+                    icon: <Crown color={THEME_COLOR} size={48} />,
+                    title: "KRALLIĞINI İSİMLENDİR",
+                    subtitle: "Asil evinizi ne diye adlandıralım?",
+                    placeholder: "örn: Pendragon Hanedanlığı",
+                    value: familyName,
+                    setValue: setFamilyName,
+                    secure: false,
+                    keyboard: 'default' as const
+                };
             case 2:
-                return (
-                    <>
-                        <View style={styles.stepIcon}>
-                            <Heart color="#e11d48" size={48} />
-                        </View>
-                        <Text style={styles.stepTitle}>SENİN ADIN NE?</Text>
-                        <Text style={styles.stepSub}>Kraliçe/Kral olarak adın</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={parentName}
-                            onChangeText={setParentName}
-                            placeholder="Adın..."
-                            placeholderTextColor="#64748b"
-                            autoFocus
-                        />
-                        <GameButton onPress={handleNext} style={styles.nextBtn}>
-                            DEVAM ET →
-                        </GameButton>
-                    </>
-                );
+                return {
+                    icon: <User color="#e11d48" size={48} />, // Rose red
+                    title: "SENİN KRALLYET UNVANIN",
+                    subtitle: "Lonca size nasıl hitap etsin?",
+                    placeholder: "Adınız",
+                    value: parentName,
+                    setValue: setParentName,
+                    secure: false,
+                    keyboard: 'default' as const
+                };
             case 3:
-                return (
-                    <>
-                        <View style={styles.stepIcon}>
-                            <Star color="#fbbf24" size={48} />
-                        </View>
-                        <Text style={styles.stepTitle}>KAHRAMANIN ADI NE?</Text>
-                        <Text style={styles.stepSub}>Çocuğunuzun macera adı</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={childName}
-                            onChangeText={setChildName}
-                            placeholder="Kahraman adı..."
-                            placeholderTextColor="#64748b"
-                            autoFocus
-                        />
-                        <GameButton onPress={handleNext} style={styles.nextBtn}>
-                            DEVAM ET →
-                        </GameButton>
-                    </>
-                );
+                return {
+                    icon: <Shield color="#3b82f6" size={48} />, // Blue
+                    title: "GENÇ KAHRAMAN ADI",
+                    subtitle: "Katılan ilk çırak kim?",
+                    placeholder: "Kahraman Adı",
+                    value: childName,
+                    setValue: setChildName,
+                    secure: false,
+                    keyboard: 'default' as const
+                };
             case 4:
-                return (
-                    <>
-                        <View style={styles.stepIcon}>
-                            <Shield color="#3b82f6" size={48} />
-                        </View>
-                        <Text style={styles.stepTitle}>GİZLİ PIN OLUŞTUR</Text>
-                        <Text style={styles.stepSub}>Ebeveyn moduna geçiş için 4 haneli kod</Text>
-                        <TextInput
-                            style={[styles.input, styles.pinInput]}
-                            value={pin}
-                            onChangeText={(v) => setPin(v.replace(/[^0-9]/g, '').substring(0, 4))}
-                            placeholder="• • • •"
-                            placeholderTextColor="#64748b"
-                            keyboardType="number-pad"
-                            secureTextEntry
-                            maxLength={4}
-                            autoFocus
-                        />
-                        <GameButton onPress={handleSetup} loading={loading} style={styles.nextBtn}>
-                            <Sparkles color="#0f172a" size={20} style={{ marginRight: 8 }} />
-                            <Text style={{ color: '#0f172a', fontWeight: 'bold' }}>KRALLIĞI KUR!</Text>
-                        </GameButton>
-                    </>
-                );
+                return {
+                    icon: <Key color="#10b981" size={48} />, // Emerald
+                    title: "GİZLİ MÜHÜR",
+                    subtitle: "Ebeveyn erişimi için 4 haneli PIN oluşturun",
+                    placeholder: "• • • •",
+                    value: pin,
+                    setValue: (v: string) => setPin(v.replace(/[^0-9]/g, '').substring(0, 4)),
+                    secure: true,
+                    keyboard: 'number-pad' as const
+                };
+            default:
+                return null;
         }
     };
 
+    const content = renderStepContent();
+
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            {/* Progress */}
-            <View style={styles.progress}>
-                {[1, 2, 3, 4].map(s => (
-                    <View key={s} style={[styles.progressDot, s <= step && styles.progressDotActive]} />
-                ))}
+        <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.container}
+        >
+            {/* Background Image */}
+            <View style={StyleSheet.absoluteFill}>
+                <Image
+                    source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrpaooWu-kvky21Y4Q9WW-ucCgZWwgV1L1xYJrB0lnWYl2VTqZ3C1ZsDlkDaVtaGEcElYQFT-VIXtUlFk6vZ_-c5bHSrwax3oJFewtelME7S0qc_cILMdVg_wFB3-yzBLuclyaig3B1blVq-E6hV0rMQ_vY49wIbH5HnfWKelSpKbEhoF8HZPSpPVRhVPyxOagazuytNOvmljlaEVN8iZg6p95h_dJsBlpDIl5Q6xDcocCoFKgprg8mrPjANyvSCW5NLPWKYpv' }} // Reusing castle bg for consistency, ideally a hall interior
+                    style={[StyleSheet.absoluteFillObject, { opacity: 0.6 }]}
+                    resizeMode="cover"
+                />
+                <LinearGradient
+                    colors={['rgba(35, 29, 15, 0.95)', 'rgba(35, 29, 15, 0.8)', 'rgba(35, 29, 15, 0.95)']}
+                    style={StyleSheet.absoluteFill}
+                />
             </View>
 
-            <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-                {renderStep()}
-            </Animated.View>
+            {/* Content Container */}
+            <ScrollView contentContainerStyle={styles.scrollContent}>
 
-            {/* Summary */}
-            {step > 1 && (
-                <View style={styles.summary}>
-                    {familyName && <Text style={styles.summaryItem}>🏰 {familyName}</Text>}
-                    {parentName && <Text style={styles.summaryItem}>👑 {parentName}</Text>}
-                    {childName && <Text style={styles.summaryItem}>⚔️ {childName}</Text>}
+                {/* Progress Bar */}
+                <View style={styles.progressContainer}>
+                    <View style={styles.progressTrack}>
+                        <Animated.View style={[styles.progressFill, { flex: progressAnim }]} />
+                    </View>
+                    <View style={styles.stepsRow}>
+                        {[1, 2, 3, 4].map((s) => (
+                            <View
+                                key={s}
+                                style={[
+                                    styles.stepDot,
+                                    step >= s ? styles.stepDotActive : styles.stepDotInactive,
+                                    step === s && styles.stepDotCurrent
+                                ]}
+                            >
+                                {step > s ? <CheckCircle2 size={12} color="#000" /> : <Text style={styles.stepNumber}>{s}</Text>}
+                            </View>
+                        ))}
+                    </View>
                 </View>
-            )}
-        </ScrollView>
+
+                {/* Main Card */}
+                {content && (
+                    <Animated.View style={[styles.cardContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                        <BlurView intensity={20} tint="light" style={styles.cardGlass}>
+
+                            <View style={styles.iconContainer}>
+                                <View style={styles.iconRing}>
+                                    {content.icon}
+                                </View>
+                                {step === 4 && <Sparkles size={24} color={THEME_COLOR} style={styles.sparkleIcon} />}
+                            </View>
+
+                            <Text style={styles.title}>{content.title}</Text>
+                            <Text style={styles.subtitle}>{content.subtitle}</Text>
+
+                            <View style={styles.inputWrapper}>
+                                <TextInput
+                                    style={[
+                                        styles.input,
+                                        content.secure && styles.inputPin
+                                    ]}
+                                    value={content.value}
+                                    onChangeText={content.setValue}
+                                    placeholder={content.placeholder}
+                                    placeholderTextColor="rgba(255,255,255,0.3)"
+                                    secureTextEntry={content.secure}
+                                    keyboardType={content.keyboard}
+                                    autoFocus
+                                    maxLength={content.secure ? 4 : 30}
+                                />
+                                {/* Bottom Border Glow */}
+                                <LinearGradient
+                                    colors={['transparent', THEME_COLOR, 'transparent']}
+                                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                                    style={styles.inputBorder}
+                                />
+                            </View>
+
+                            {/* Summary Chips for previous steps */}
+                            <View style={styles.summaryContainer}>
+                                {step > 1 && <View style={styles.chip}><Crown size={10} color="#fff" /><Text style={styles.chipText}>{familyName}</Text></View>}
+                                {step > 2 && <View style={styles.chip}><User size={10} color="#fff" /><Text style={styles.chipText}>{parentName}</Text></View>}
+                                {step > 3 && <View style={styles.chip}><Shield size={10} color="#fff" /><Text style={styles.chipText}>{childName}</Text></View>}
+                            </View>
+
+                        </BlurView>
+                    </Animated.View>
+                )}
+
+                {/* Action Button */}
+                <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={step === 4 ? handleSetup : handleNext}
+                    activeOpacity={0.8}
+                    disabled={loading}
+                >
+                    <LinearGradient
+                        colors={[THEME_COLOR, '#eeb11b']}
+                        style={styles.actionBtnGradient}
+                    >
+                        {loading ? (
+                            <Text style={styles.actionBtnText}>KURULUYOR...</Text>
+                        ) : (
+                            <>
+                                <Text style={styles.actionBtnText}>
+                                    {step === 4 ? "KRALLIĞI KUR" : "DEVAM ET"}
+                                </Text>
+                                <ArrowRight size={20} color="#231d0f" strokeWidth={3} />
+                            </>
+                        )}
+                    </LinearGradient>
+                </TouchableOpacity>
+
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flexGrow: 1, backgroundColor: '#0f172a', padding: 24, paddingTop: 60 },
-    progress: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 40 },
-    progressDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: '#334155',
+    container: { flex: 1, backgroundColor: '#231d0f' },
+    scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingTop: 60 },
+
+    progressContainer: { marginBottom: 40 },
+    progressTrack: { height: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', position: 'absolute', top: 12, left: 12, right: 12, zIndex: 0 },
+    progressFill: { backgroundColor: THEME_COLOR, height: '100%' },
+    stepsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+    stepDot: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2, zIndex: 1 },
+    stepDotInactive: { backgroundColor: '#231d0f', borderColor: 'rgba(255,255,255,0.2)' },
+    stepDotActive: { backgroundColor: THEME_COLOR, borderColor: THEME_COLOR },
+    stepDotCurrent: { transform: [{ scale: 1.2 }], borderColor: '#fff' },
+    stepNumber: { color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 'bold' },
+
+    cardContainer: { width: '100%', alignItems: 'center', marginBottom: 32 },
+    cardGlass: {
+        width: '100%',
+        borderRadius: 32,
+        paddingVertical: 40,
+        paddingHorizontal: 24,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        overflow: 'hidden'
     },
-    progressDotActive: {
-        backgroundColor: '#fbbf24',
-        width: 24,
-    },
-    content: { alignItems: 'center', flex: 1 },
-    stepIcon: {
+
+    iconContainer: { marginBottom: 24 },
+    iconRing: {
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+        backgroundColor: 'rgba(251, 189, 35, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 32,
+        borderWidth: 1,
+        borderColor: 'rgba(251, 189, 35, 0.3)',
+        shadowColor: THEME_COLOR,
+        shadowOpacity: 0.3,
+        shadowRadius: 20
     },
-    stepTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#fbbf24',
-        textAlign: 'center',
-        letterSpacing: 1,
-    },
-    stepSub: {
-        fontSize: 13,
-        color: '#94a3b8',
-        textAlign: 'center',
-        marginTop: 8,
-        marginBottom: 32,
-    },
+    sparkleIcon: { position: 'absolute', top: 0, right: 0 },
+
+    title: { color: '#fff', fontSize: 22, fontWeight: 'bold', letterSpacing: 1, textAlign: 'center', marginBottom: 8 },
+    subtitle: { color: 'rgba(255,255,255,0.6)', fontSize: 14, textAlign: 'center', marginBottom: 40 },
+
+    inputWrapper: { width: '100%', position: 'relative', marginBottom: 24 },
     input: {
         width: '100%',
-        backgroundColor: '#1e293b',
-        borderRadius: 20,
-        padding: 18,
+        fontSize: 20,
         color: '#fff',
-        fontSize: 18,
-        borderWidth: 2,
-        borderColor: '#334155',
         textAlign: 'center',
+        paddingVertical: 12,
+        fontWeight: '600'
     },
-    pinInput: {
-        fontSize: 32,
-        letterSpacing: 16,
-    },
-    nextBtn: { marginTop: 24, width: '100%', paddingVertical: 16 },
-    summary: {
+    inputPin: { fontSize: 32, letterSpacing: 12 },
+    inputBorder: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, opacity: 0.8 },
+
+    summaryContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 12 },
+    chip: {
         flexDirection: 'row',
-        justifyContent: 'center',
-        flexWrap: 'wrap',
-        gap: 16,
-        marginTop: 32,
-        paddingTop: 24,
-        borderTopWidth: 1,
-        borderTopColor: '#1e293b',
-    },
-    summaryItem: {
-        color: '#64748b',
-        fontSize: 12,
-        backgroundColor: '#1e293b',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(255,255,255,0.1)',
         paddingHorizontal: 12,
         paddingVertical: 6,
-        borderRadius: 12,
+        borderRadius: 100
     },
+    chipText: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 'bold' },
+
+    actionBtn: { width: '100%', height: 64, borderRadius: 20, shadowColor: THEME_COLOR, shadowOpacity: 0.4, shadowRadius: 15, elevation: 10 },
+    actionBtnGradient: { flex: 1, borderRadius: 20, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12 },
+    actionBtnText: { color: '#231d0f', fontSize: 16, fontWeight: '900', letterSpacing: 1 }
 });
