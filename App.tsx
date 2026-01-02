@@ -47,7 +47,7 @@ const MainApp = ({ route, navigation }: any) => {
   const [role, setRole] = useState<Role>(initialUser.role);
   const [activeTab, setActiveTab] = useState<TabType>('quests');
   const [quests, setQuests] = useState<Quest[]>([]);
-  const [rewards] = useState<Reward[]>(INITIAL_REWARDS);
+  const [rewards, setRewards] = useState<Reward[]>(INITIAL_REWARDS);
   const [showPin, setShowPin] = useState(false);
   const [pet, setPet] = useState<PetState>({
     id: 'ignis-1',
@@ -64,6 +64,9 @@ const MainApp = ({ route, navigation }: any) => {
 
   useEffect(() => {
     loadQuests();
+    loadRewards();
+
+    // ... rest of existing useEffect
     const subscription = subscribeToQuests(user.family_id, () => loadQuests());
 
     const loadPetState = async () => {
@@ -81,8 +84,41 @@ const MainApp = ({ route, navigation }: any) => {
     return () => { subscription.unsubscribe(); };
   }, []);
 
+  const loadRewards = async () => {
+    try {
+      const storedRewards = await AsyncStorage.getItem(`@rewards_${user.family_id}`);
+      if (storedRewards) {
+        setRewards(JSON.parse(storedRewards));
+      } else {
+        setRewards(INITIAL_REWARDS);
+      }
+    } catch (e) {
+      console.error('Failed to load rewards', e);
+    }
+  };
+
+  const saveRewards = async (newRewards: Reward[]) => {
+    try {
+      setRewards(newRewards);
+      await AsyncStorage.setItem(`@rewards_${user.family_id}`, JSON.stringify(newRewards));
+    } catch (e) {
+      console.error('Failed to save rewards', e);
+    }
+  };
+
+  const handleAddReward = (reward: Reward) => {
+    const newRewards = [...rewards, reward];
+    saveRewards(newRewards);
+  };
+
+  const handleDeleteReward = (id: string) => {
+    const newRewards = rewards.filter(r => r.id !== id);
+    saveRewards(newRewards);
+  };
+
   useEffect(() => {
     const savePetState = async () => {
+      // ... existing pet save
       try {
         await AsyncStorage.setItem(`@pet_state_${user.id}`, JSON.stringify(pet));
       } catch (e) {
@@ -180,13 +216,27 @@ const MainApp = ({ route, navigation }: any) => {
     setPet(prev => ({ ...prev, ...updates }));
   };
 
-  const handleRedeemReward = (reward: Reward) => {
+  const handleRedeemReward = async (reward: Reward) => {
     if (user.xp < reward.cost) {
       Alert.alert('Yetersiz Altın', 'Bu ödülü almak için daha fazla altına ihtiyacın var!');
       return;
     }
-    // Ödül talep mantığı buraya gelecek
-    Alert.alert('Tebrikler!', `${reward.name} talebiniz ebeveyninize iletildi.`);
+
+    // Deduct gold
+    const newXp = user.xp - reward.cost;
+    // Update local state and DB
+    setUser(prev => ({ ...prev, xp: newXp }));
+    try {
+      await supabase.from('users').update({ xp: newXp }).eq('id', user.id);
+
+      // Notify parent (Optional: Create a "redemption" record in a future table)
+      Alert.alert('Tebrikler!', `${reward.name} satın alındı! Ebeveynine bildirildi.`);
+
+      // Add to history or notification logic here if needed
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Hata', 'İşlem sırasında bir hata oluştu.');
+    }
   };
 
   if (showPin) {
@@ -208,14 +258,18 @@ const MainApp = ({ route, navigation }: any) => {
       return (
         <ParentDashboard
           quests={quests}
+          rewards={rewards}
           onApprove={handleApprove}
           onAddQuest={handleAddQuest}
           onDelete={handleDelete}
           onSendBlessing={handleSendBlessing}
+          onAddReward={handleAddReward}
+          onDeleteReward={handleDeleteReward}
           onExit={() => handleRoleSwitch('child')}
         />
       );
     }
+
 
     switch (activeTab) {
       case 'quests':

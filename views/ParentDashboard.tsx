@@ -6,14 +6,11 @@ import { BlurView } from 'expo-blur';
 import {
   Bell, Shield, Zap, TrendingUp, Check, X, Plus, Crown, Sparkles,
   CheckCircle2, DollarSign,
-  LayoutDashboard, ClipboardList, BookOpen, Settings
+  LayoutDashboard, ClipboardList, BookOpen, Settings, ShoppingBag
 } from 'lucide-react-native';
 import { GameButton } from '../components/GameButton';
-import { Quest, QuestCategory, ParentType } from '../types';
-import { CATEGORY_METADATA } from '../constants';
-
+import { Reward, Quest, ParentType } from '../types';
 import { getFamilyById } from '../services/familyService';
-
 
 const MOCK_PARTY = [
   { id: '1', name: 'Leo', role: 'Paladin', lvl: 4, xp: 800, maxXp: 1000, avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB7OniOqaon-5pl0Oo6aj2Hiem8xZmRsWscgoPIZTaNqyJ2I85HbnYKJRoud8-eBzhXUCZ_OgxtILlSkrOVZd4W_6tP7822Q69QviTSSAzFi_lOWQxL5moBApivWj-s4tSSrn7ldYkLC9lsdpfbZiVVkoEEIfQS-mt-J7kgtfqMWX8_dlElPMLz5F9kv8L-sj3DyRWr84x3bQaoljlwq90cKrU-nXHad79812CJchxx9U7abbE_gMR7LTSzYFdXOy11OuC6hpyp', roleLabel: 'Şövalye' },
@@ -22,23 +19,40 @@ const MOCK_PARTY = [
 
 interface ParentDashboardProps {
   quests: Quest[];
+  rewards: Reward[];
   onApprove: (id: string, xpReward: number) => void;
   onAddQuest: (quest: Partial<Quest>) => void;
   onDelete: (id: string) => void;
   onSendBlessing: (from: ParentType) => void;
+  onAddReward: (reward: Reward) => void;
+  onDeleteReward: (id: string) => void;
   onExit: () => void;
 }
 
-export const ParentDashboard: React.FC<ParentDashboardProps> = ({ quests, onApprove, onAddQuest, onDelete, onSendBlessing, onExit }) => {
+export const ParentDashboard: React.FC<ParentDashboardProps> = ({
+  quests,
+  rewards,
+  onApprove,
+  onAddQuest,
+  onDelete,
+  onSendBlessing,
+  onAddReward,
+  onDeleteReward,
+  onExit
+}) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [isAddingReward, setIsAddingReward] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'rewards'>('dashboard');
   const [storedFamilyCode, setStoredFamilyCode] = useState<string | null>(null);
-
 
   const [parentType, setParentType] = useState<ParentType>('dad');
   const [newQuestTitle, setNewQuestTitle] = useState('');
+  const [newRewardTitle, setNewRewardTitle] = useState('');
+  const [newRewardCost, setNewRewardCost] = useState('');
   const [isRoutine, setIsRoutine] = useState(false);
 
+  // ... (useEffect for loading data remains same)
   // Load family code on mount
   React.useEffect(() => {
     const loadData = async () => {
@@ -75,9 +89,27 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ quests, onAppr
 
   const pendingQuests = quests.filter(q => q.status === 'pending_approval');
 
+  const ICON_OPTIONS = ['🎁', '🎮', '📱', '🍦', '🚲', '🎞️', '⚽', '🎨', '🎸', '🧩', '🧸', '🍔', '🍕', '🏊', '📚', '🏕️', '🎢', '🏖️', '🎧', '💻'];
+  const [selectedIcon, setSelectedIcon] = useState('🎁');
+
+  const handleAddRewardSubmit = () => {
+    if (!newRewardTitle || !newRewardCost) return;
+    onAddReward({
+      id: Date.now().toString(),
+      name: newRewardTitle,
+      cost: parseInt(newRewardCost),
+      icon: selectedIcon,
+      type: 'real',
+      isUnlocked: true
+    });
+    setNewRewardTitle('');
+    setNewRewardCost('');
+    setSelectedIcon('🎁');
+    setIsAddingReward(false);
+  };
+
   return (
     <View style={styles.container}>
-      {/* Background Layer */}
       <LinearGradient
         colors={['#1e1b4b', '#0f172a', '#111827']}
         style={StyleSheet.absoluteFill}
@@ -87,7 +119,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ quests, onAppr
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* Header / Command Center */}
+        {/* Header */}
         <View style={styles.topSection}>
           <View style={styles.headerBar}>
             <View style={styles.profileGroup}>
@@ -110,265 +142,228 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ quests, onAppr
               </View>
             </TouchableOpacity>
           </View>
-
-          <View style={styles.greeting}>
-            <Text style={styles.greetingTitle}>Komuta Merkezi</Text>
-            <Text style={styles.greetingSub}>Partinin görevlerini ve ödüllerini yönet.</Text>
-          </View>
         </View>
 
-        {/* Party Status (Horizontal Scroll) */}
-        <View style={styles.partySection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Parti Durumu</Text>
-            <Text style={styles.viewAllText}>TÜMÜNÜ GÖR</Text>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.partyScroll}>
-            {MOCK_PARTY.map((member) => (
-              <BlurView key={member.id} intensity={20} tint="light" style={styles.memberCard}>
-                <View style={styles.memberHeader}>
-                  <View style={styles.memberAvatarContainer}>
-                    <Image source={{ uri: member.avatar }} style={styles.memberAvatar} />
-                    <View style={styles.memberIconOverlay}>
-                      {member.id === '1' ? <Shield size={12} color="#fff" /> : <Zap size={12} color="#fff" />}
-                    </View>
-                  </View>
-                  <View>
-                    <Text style={styles.memberName}>{member.name}</Text>
-                    <Text style={[styles.memberRole, { color: member.id === '1' ? '#fbbf24' : '#818cf8' }]}>
-                      Svye {member.lvl} {member.roleLabel}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.xpProgress}>
-                  <View style={styles.xpTextRow}>
-                    <Text style={styles.xpLabel}>Altın Birikimi</Text>
-                    <Text style={styles.xpLabel}>{member.xp}/{member.maxXp}</Text>
-                  </View>
-                  <View style={styles.xpTrack}>
-                    <View
-                      style={[
-                        styles.xpFill,
-                        { width: `${(member.xp / member.maxXp) * 100}%`, backgroundColor: member.id === '1' ? '#fbbf24' : '#818cf8' }
-                      ]}
-                    />
-                  </View>
-                </View>
-              </BlurView>
-            ))}
-
-            {/* Quick Stats Widget (Allowance) */}
-            <BlurView intensity={10} tint="light" style={styles.statsWidget}>
-              <View style={styles.statIconBadge}>
-                <DollarSign size={20} color="#fbbf24" />
+        {/* Tab View Wrapper */}
+        {activeTab === 'dashboard' ? (
+          <>
+            {/* Party Status */}
+            <View style={styles.partySection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Parti Durumu</Text>
+                <Text style={styles.viewAllText}>TÜMÜNÜ GÖR</Text>
               </View>
-              <Text style={styles.statLabel}>Ödenek</Text>
-              <Text style={styles.statValue}>15.00 ₺</Text>
-            </BlurView>
-          </ScrollView>
-        </View>
 
-        {/* Pending Approvals */}
-        <View style={styles.approvalsSection}>
-          <View style={styles.sectionHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={styles.sectionTitle}>Onay Bekleyenler</Text>
-              <View style={styles.countBadge}><Text style={styles.countText}>{pendingQuests.length}</Text></View>
-            </View>
-          </View>
-
-          {pendingQuests.length === 0 ? (
-            <View style={styles.emptyState}>
-              <CheckCircle2 size={32} color="#64748b" />
-              <Text style={styles.emptyText}>Hepsi tamam! Bekleyen rapor yok.</Text>
-            </View>
-          ) : (
-            pendingQuests.map((quest) => (
-              <BlurView key={quest.id} intensity={15} tint="light" style={styles.approvalCard}>
-                <View style={styles.approvalHeader}>
-                  <View style={styles.approvalInfo}>
-                    <View style={[styles.approvalIconBox, { backgroundColor: '#818cf820' }]}>
-                      {quest.titleKey.toLowerCase().includes('dog') ? <Shield size={20} color="#818cf8" /> : <ClipboardList size={20} color="#818cf8" />}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.partyScroll}>
+                {MOCK_PARTY.map((member) => (
+                  <BlurView key={member.id} intensity={20} tint="light" style={styles.memberCard}>
+                    <View style={styles.memberHeader}>
+                      <View style={styles.memberAvatarContainer}>
+                        <Image source={{ uri: member.avatar }} style={styles.memberAvatar} />
+                        <View style={styles.memberIconOverlay}>
+                          {member.id === '1' ? <Shield size={12} color="#fff" /> : <Zap size={12} color="#fff" />}
+                        </View>
+                      </View>
+                      <View>
+                        <Text style={styles.memberName}>{member.name}</Text>
+                        <Text style={[styles.memberRole, { color: member.id === '1' ? '#fbbf24' : '#818cf8' }]}>
+                          Svye {member.lvl} {member.roleLabel}
+                        </Text>
+                      </View>
                     </View>
-                    <View>
-                      <Text style={styles.approvalTitle}>{quest.titleKey}</Text>
-                      <Text style={styles.approvalSub}>Görev Raporu • Az önce</Text>
+                    <View style={styles.xpProgress}>
+                      <View style={styles.xpTextRow}>
+                        <Text style={styles.xpLabel}>Altın Birikimi</Text>
+                        <Text style={styles.xpLabel}>{member.xp}/{member.maxXp}</Text>
+                      </View>
+                      <View style={styles.xpTrack}>
+                        <View style={[styles.xpFill, { width: `${(member.xp / member.maxXp) * 100}%`, backgroundColor: member.id === '1' ? '#fbbf24' : '#818cf8' }]} />
+                      </View>
                     </View>
-                  </View>
-                  <View style={styles.childTag}>
-                    <Image source={{ uri: MOCK_PARTY[0].avatar }} style={styles.childTagAvatar} />
-                    <Text style={styles.childTagName}>Leo</Text>
-                  </View>
+                  </BlurView>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Approvals */}
+            <View style={styles.approvalsSection}>
+              <View style={styles.sectionHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={styles.sectionTitle}>Onay Bekleyenler</Text>
+                  <View style={styles.countBadge}><Text style={styles.countText}>{pendingQuests.length}</Text></View>
                 </View>
-
-                {/* Mock Image for "Clean Room" tasks */}
-                {quest.titleKey.toLowerCase().includes('clean') && (
-                  <View style={styles.proofImageContainer}>
-                    <Image
-                      source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuANTOWmdjNslYeTpHrMA86Im4tTtjD7SGSJv-B6ovyQVgFlhlkl9QLOpCd5vUIYXIR0nCpfqVJO8UCp3bOaE4KAgEwDxFGcCPyRiHCmqadSZ00KDS97Iol7clgcHqFJgDmHdra-9Iqj-Vw_pw67UezgPd4RrxyRMnOLnPRtN2Ibvucz9K3v4rF4ZhjnhZqkYIWVYlrPvuLqg68uxsLnPsZsIpppHZkGkfn3Xvbj3wZrtkBKYcq1RuAWodDrtK1RygClAbCLBgya' }}
-                      style={styles.proofImage}
-                    />
-                    <BlurView intensity={50} style={styles.proofBadge}>
-                      <Text style={styles.proofText}>Kanıt Eklendi</Text>
-                    </BlurView>
-                  </View>
-                )}
-
-                <View style={styles.decisionButtons}>
-                  <TouchableOpacity style={styles.rejectButton}>
-                    <X size={20} color="#ef4444" />
-                    <Text style={styles.rejectText}>Reddet</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => onApprove(quest.id, quest.xpReward)} style={styles.approveButton}>
-                    <Check size={20} color="#1e1b4b" />
-                    <Text style={styles.approveButtonText}>Onayla (+{quest.xpReward} ALTIN)</Text>
-                  </TouchableOpacity>
+              </View>
+              {pendingQuests.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <CheckCircle2 size={32} color="#64748b" />
+                  <Text style={styles.emptyText}>Hepsi tamam! Bekleyen rapor yok.</Text>
                 </View>
-              </BlurView>
-            ))
-          )}
-        </View>
-
-        {/* Add Task Modal overlay */}
-        {isAdding && (
-          <View style={styles.modalOverlay}>
-            <BlurView intensity={50} tint="dark" style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Yeni Görev Emri</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Görev Başlığı"
-                placeholderTextColor="#94a3b8"
-                value={newQuestTitle}
-                onChangeText={setNewQuestTitle}
-              />
-
-              <TouchableOpacity
-                style={[styles.routineToggle, isRoutine && styles.routineToggleActive]}
-                onPress={() => setIsRoutine(!isRoutine)}
-              >
-                <View style={[styles.checkbox, isRoutine && styles.checkboxActive]}>
-                  {isRoutine && <Check size={14} color="#000" />}
-                </View>
-                <Text style={styles.routineLabel}>Bu bir Günlük Rutin (Her gün tekrar eder)</Text>
+              ) : (
+                pendingQuests.map((quest) => (
+                  <BlurView key={quest.id} intensity={15} tint="light" style={styles.approvalCard}>
+                    <View style={styles.approvalHeader}>
+                      <View style={styles.approvalInfo}>
+                        <View style={[styles.approvalIconBox, { backgroundColor: '#818cf820' }]}>
+                          <Shield size={20} color="#818cf8" />
+                        </View>
+                        <View>
+                          <Text style={styles.approvalTitle}>{quest.titleKey}</Text>
+                          <Text style={styles.approvalSub}>Görev Raporu • Az önce</Text>
+                        </View>
+                      </View>
+                      <View style={styles.decisionButtons}>
+                        <TouchableOpacity onPress={() => onApprove(quest.id, quest.xpReward)} style={styles.approveButton}>
+                          <Check size={20} color="#1e1b4b" />
+                          <Text style={styles.approveButtonText}>Onayla (+{quest.xpReward} A)</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </BlurView>
+                ))
+              )}
+            </View>
+          </>
+        ) : (
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Mağaza Yönetimi (Hazine Odası)</Text>
+              <TouchableOpacity onPress={() => setIsAddingReward(true)} style={[styles.navFab, { marginTop: 0, width: 40, height: 40, borderWidth: 0 }]}>
+                <Plus size={24} color="#1e1b4b" />
               </TouchableOpacity>
+            </View>
 
-              <View style={styles.modalButtons}>
-                <TouchableOpacity onPress={() => setIsAdding(false)} style={styles.modalCancel}>
-                  <Text style={styles.modalCancelText}>İPTAL</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => {
-                  if (!newQuestTitle) return;
-                  if (!newQuestTitle) return;
-                  onAddQuest({
-                    titleKey: newQuestTitle,
-                    xpReward: 25,
-                    category: 'magic',
-                    type: isRoutine ? 'routine' : 'daily'
-                  });
-                  setNewQuestTitle('');
-                  setIsRoutine(false);
-                  setIsAdding(false);
-                }} style={styles.modalPublish}>
-                  <Text style={styles.modalPublishText}>YAYINLA</Text>
-                </TouchableOpacity>
-              </View>
-            </BlurView>
+            <View style={styles.rewardsList}>
+              {rewards.map(reward => (
+                <BlurView key={reward.id} intensity={15} tint="light" style={styles.rewardRow}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <Text style={{ fontSize: 24 }}>{reward.icon}</Text>
+                    <View>
+                      <Text style={{ color: '#fff', fontWeight: 'bold' }}>{reward.name}</Text>
+                      <Text style={{ color: '#fbbf24', fontSize: 12, fontWeight: 'bold' }}>{reward.cost} Altın</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity onPress={() => onDeleteReward(reward.id)} style={{ padding: 8, backgroundColor: 'rgba(239, 68, 68, 0.2)', borderRadius: 8 }}>
+                    <X size={16} color="#ef4444" />
+                  </TouchableOpacity>
+                </BlurView>
+              ))}
+            </View>
           </View>
         )}
 
-        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Settings Modal */}
-      {showSettings && (
-        <Modal
-          transparent={true}
-          animationType="fade"
-          visible={showSettings}
-          onRequestClose={() => setShowSettings(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <BlurView intensity={30} tint="dark" style={styles.modalContent}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <Text style={styles.modalTitle}>Ayarlar</Text>
-                <TouchableOpacity onPress={() => setShowSettings(false)}>
-                  <X size={24} color="#64748b" />
-                </TouchableOpacity>
-              </View>
+      {/* Reward Modal */}
+      {isAddingReward && (
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={50} tint="dark" style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Yeni Ödül Ekle</Text>
 
-              <View style={{ marginBottom: 24 }}>
-                <Text style={{ color: '#94a3b8', marginBottom: 8, fontSize: 14 }}>AİLE KODU</Text>
-                <TouchableOpacity
-                  style={{
-                    backgroundColor: 'rgba(251, 191, 36, 0.1)',
-                    padding: 16,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: 'rgba(251, 191, 36, 0.3)',
-                    alignItems: 'center',
-                    flexDirection: 'row',
-                    justifyContent: 'space-between'
-                  }}
-                  onPress={async () => {
-                    if (storedFamilyCode) {
-                      try {
-                        await Share.share({
-                          message: `HeroQuest Aile Kodumuz: ${storedFamilyCode}`,
-                          title: 'HeroQuest Aile Kodu'
-                        });
-                      } catch (error) {
-                        Alert.alert("Hata", "Paylaşım başlatılamadı.");
-                      }
-                    } else {
-                      Alert.alert("Hata", "Aile kodu bulunamadı.");
-                    }
-                  }}
-                >
-                  <Text style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold', letterSpacing: 2 }}>
-                    {storedFamilyCode || "YÜKLENİYOR..."}
-                  </Text>
-                  <View style={{ backgroundColor: '#fbbf24', padding: 8, borderRadius: 8 }}>
-                    <Text style={{ color: '#1e1b4b', fontWeight: 'bold', fontSize: 10 }}>PAYLAŞ</Text>
-                  </View>
-                </TouchableOpacity>
-                <Text style={{ color: '#64748b', fontSize: 12, marginTop: 8 }}>
-                  Diğer ebeveynler veya yeni cihazlar bu kodu kullanarak aileye katılabilir.
-                </Text>
-              </View>
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: 'bold', marginBottom: 12, marginLeft: 4 }}>İKON SEÇ</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                {ICON_OPTIONS.map(icon => (
+                  <TouchableOpacity
+                    key={icon}
+                    onPress={() => setSelectedIcon(icon)}
+                    style={{
+                      width: 48, height: 48, borderRadius: 24,
+                      backgroundColor: selectedIcon === icon ? '#fbbf24' : 'rgba(255,255,255,0.1)',
+                      justifyContent: 'center', alignItems: 'center',
+                      borderWidth: 2, borderColor: selectedIcon === icon ? '#fbbf24' : 'transparent'
+                    }}
+                  >
+                    <Text style={{ fontSize: 24 }}>{icon}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
 
-              <TouchableOpacity style={{ padding: 16, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Settings size={20} color="#94a3b8" />
-                <Text style={{ color: '#94a3b8' }}>Diğer Ayarlar (Yakında)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ödül Adı (Örn: 30 Dk Tablet)"
+              placeholderTextColor="#94a3b8"
+              value={newRewardTitle}
+              onChangeText={setNewRewardTitle}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Fiyat (Altın)"
+              placeholderTextColor="#94a3b8"
+              value={newRewardCost}
+              onChangeText={setNewRewardCost}
+              keyboardType="numeric"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity onPress={() => setIsAddingReward(false)} style={styles.modalCancel}>
+                <Text style={styles.modalCancelText}>İPTAL</Text>
               </TouchableOpacity>
-
-            </BlurView>
-          </View>
-        </Modal>
+              <TouchableOpacity onPress={handleAddRewardSubmit} style={styles.modalPublish}>
+                <Text style={styles.modalPublishText}>EKLE</Text>
+              </TouchableOpacity>
+            </View>
+          </BlurView>
+        </View>
       )}
 
-      {/* Bottom Navigation */}
+      {/* Quest Modal */}
+      {isAdding && (
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={50} tint="dark" style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Yeni Görev Emri</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Görev Başlığı"
+              placeholderTextColor="#94a3b8"
+              value={newQuestTitle}
+              onChangeText={setNewQuestTitle}
+            />
+            <TouchableOpacity
+              style={[styles.routineToggle, isRoutine && styles.routineToggleActive]}
+              onPress={() => setIsRoutine(!isRoutine)}
+            >
+              <View style={[styles.checkbox, isRoutine && styles.checkboxActive]}>
+                {isRoutine && <Check size={14} color="#000" />}
+              </View>
+              <Text style={styles.routineLabel}>Bu bir Günlük Rutin</Text>
+            </TouchableOpacity>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity onPress={() => setIsAdding(false)} style={styles.modalCancel}>
+                <Text style={styles.modalCancelText}>İPTAL</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => {
+                if (!newQuestTitle) return;
+                onAddQuest({
+                  titleKey: newQuestTitle,
+                  xpReward: 25,
+                  category: 'magic',
+                  type: isRoutine ? 'routine' : 'daily'
+                });
+                setNewQuestTitle('');
+                setIsRoutine(false);
+                setIsAdding(false);
+              }} style={styles.modalPublish}>
+                <Text style={styles.modalPublishText}>YAYINLA</Text>
+              </TouchableOpacity>
+            </View>
+          </BlurView>
+        </View>
+      )}
+
+      {/* Bottom Nav */}
       <BlurView intensity={50} tint="dark" style={styles.bottomNav}>
-        <View style={styles.navItem}>
-          <LayoutDashboard size={24} color="#818cf8" />
-          <Text style={[styles.navText, { color: '#818cf8', fontWeight: 'bold' }]}>Komut</Text>
-        </View>
-        <View style={styles.navItem}>
-          <ClipboardList size={24} color="#64748b" />
-          <Text style={styles.navText}>Görevler</Text>
-        </View>
+        <TouchableOpacity onPress={() => setActiveTab('dashboard')} style={styles.navItem}>
+          <LayoutDashboard size={24} color={activeTab === 'dashboard' ? "#818cf8" : "#64748b"} />
+          <Text style={[styles.navText, activeTab === 'dashboard' && { color: '#818cf8', fontWeight: 'bold' }]}>Komut</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.navFab} onPress={() => setIsAdding(true)}>
           <Plus size={32} color="#1e1b4b" />
         </TouchableOpacity>
 
-        <View style={styles.navItem}>
-          <BookOpen size={24} color="#64748b" />
-          <Text style={styles.navText}>Notlar</Text>
-        </View>
-        <TouchableOpacity style={styles.navItem} onPress={() => setShowSettings(true)}>
-          <Settings size={24} color={showSettings ? "#fbbf24" : "#64748b"} />
-          <Text style={[styles.navText, showSettings && { color: '#fbbf24' }]}>Ayarlar</Text>
+        <TouchableOpacity onPress={() => setActiveTab('rewards')} style={styles.navItem}>
+          <ShoppingBag size={24} color={activeTab === 'rewards' ? "#fbbf24" : "#64748b"} />
+          <Text style={[styles.navText, activeTab === 'rewards' && { color: '#fbbf24', fontWeight: 'bold' }]}>Ödüller</Text>
         </TouchableOpacity>
       </BlurView>
     </View>
@@ -379,18 +374,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f172a' },
   scrollContent: { paddingBottom: 100 },
   topSection: { padding: 24, paddingTop: 40 },
-  headerBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  headerBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   profileGroup: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  parentAvatarContainer: { width: 56, height: 56, position: 'relative', alignItems: 'center', justifyContent: 'center' },
-  parentAvatar: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#818cf8' },
-  parentAvatarGlow: { position: 'absolute', width: 56, height: 56, borderRadius: 28, backgroundColor: '#818cf8', opacity: 0.3 },
+  parentAvatarContainer: { width: 48, height: 48, position: 'relative', alignItems: 'center', justifyContent: 'center' },
+  parentAvatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#818cf8' },
+  parentAvatarGlow: { position: 'absolute', width: 48, height: 48, borderRadius: 24, backgroundColor: '#818cf8', opacity: 0.3 },
   parentRole: { color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 'bold', letterSpacing: 1 },
   parentName: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  notifButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  notifDot: { position: 'absolute', top: 10, right: 10, width: 8, height: 8, backgroundColor: '#fbbf24', borderRadius: 4 },
-  greeting: { marginTop: 16 },
-  greetingTitle: { color: '#fff', fontSize: 32, fontWeight: 'bold' },
-  greetingSub: { color: 'rgba(255,255,255,0.5)', fontSize: 14, marginTop: 4 },
+  notifButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
 
   partySection: { marginTop: 8 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, marginBottom: 16 },
@@ -410,11 +401,6 @@ const styles = StyleSheet.create({
   xpTrack: { height: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 4 },
   xpFill: { height: '100%', borderRadius: 4 },
 
-  statsWidget: { width: 140, padding: 16, borderRadius: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', height: 140, borderStyle: 'dashed' },
-  statIconBadge: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(251, 191, 36, 0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  statLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 12, marginBottom: 4 },
-  statValue: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
-
   approvalsSection: { marginTop: 32, paddingHorizontal: 24 },
   countBadge: { backgroundColor: '#fbbf24', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, },
   countText: { color: '#1e1b4b', fontSize: 12, fontWeight: 'bold' },
@@ -422,36 +408,32 @@ const styles = StyleSheet.create({
   emptyText: { color: '#fff', marginTop: 12 },
 
   approvalCard: { padding: 16, borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginBottom: 16, backgroundColor: 'rgba(255,255,255,0.03)' },
-  approvalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  approvalInfo: { flexDirection: 'row', gap: 12 },
+  approvalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  approvalInfo: { flexDirection: 'row', gap: 12, alignItems: 'center', flex: 1 },
   approvalIconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   approvalTitle: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   approvalSub: { color: '#94a3b8', fontSize: 12 },
-  childTag: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', paddingRight: 8, paddingLeft: 4, paddingVertical: 4, borderRadius: 12, gap: 4 },
-  childTagAvatar: { width: 24, height: 24, borderRadius: 12 },
-  childTagName: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+  decisionButtons: { flexDirection: 'row' },
+  approveButton: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 24, backgroundColor: '#fbbf24', flexDirection: 'row', alignItems: 'center', gap: 6 },
+  approveButtonText: { color: '#1e1b4b', fontWeight: 'bold', fontSize: 12 },
 
-  proofImageContainer: { height: 140, borderRadius: 16, overflow: 'hidden', marginBottom: 16, position: 'relative' },
-  proofImage: { width: '100%', height: '100%' },
-  proofBadge: { position: 'absolute', bottom: 8, right: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, overflow: 'hidden' },
-  proofText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+  sectionContainer: { paddingHorizontal: 24 },
+  rewardsList: { gap: 12 },
+  rewardRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    padding: 16, borderRadius: 16, overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)'
+  },
 
-  decisionButtons: { flexDirection: 'row', gap: 12 },
-  rejectButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 48, borderRadius: 24, backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)', gap: 8 },
-  rejectText: { color: '#ef4444', fontWeight: 'bold', fontSize: 14 },
-  approveButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 48, borderRadius: 24, backgroundColor: '#fbbf24', gap: 8 },
-  approveButtonText: { color: '#1e1b4b', fontWeight: 'bold', fontSize: 14 },
-
-  modalOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.8)', zIndex: 1000, justifyContent: 'center', padding: 24 },
+  modalOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.95)', zIndex: 1000, justifyContent: 'center', padding: 24 },
   modalContent: { borderRadius: 32, padding: 32, overflow: 'hidden', borderWidth: 1, borderColor: '#fbbf24' },
   modalTitle: { fontSize: 24, color: '#fbbf24', fontWeight: 'bold', textAlign: 'center', marginBottom: 24 },
-  input: { backgroundColor: 'rgba(30, 41, 59, 0.8)', borderRadius: 16, padding: 16, color: '#fff', fontSize: 16, marginBottom: 24, borderWidth: 1, borderColor: '#334155' },
-  modalButtons: { flexDirection: 'row', gap: 12 },
+  input: { backgroundColor: 'rgba(30, 41, 59, 1)', borderRadius: 16, padding: 16, color: '#fff', fontSize: 16, marginBottom: 16, borderWidth: 1, borderColor: '#334155' },
+  modalButtons: { flexDirection: 'row', gap: 12, marginTop: 8 },
   modalCancel: { flex: 1, paddingVertical: 16, alignItems: 'center' },
   modalCancelText: { color: '#64748b', fontWeight: 'bold' },
   modalPublish: { flex: 1, backgroundColor: '#fbbf24', paddingVertical: 16, borderRadius: 16, alignItems: 'center' },
   modalPublishText: { color: '#1e1b4b', fontWeight: 'bold' },
-
   routineToggle: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24, padding: 12, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12 },
   routineToggleActive: { backgroundColor: 'rgba(251, 191, 36, 0.1)', borderColor: 'rgba(251, 191, 36, 0.3)', borderWidth: 1 },
   checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#64748b', justifyContent: 'center', alignItems: 'center' },
@@ -459,19 +441,9 @@ const styles = StyleSheet.create({
   routineLabel: { color: '#ccc', fontSize: 13 },
 
   bottomNav: {
-    position: 'absolute',
-    bottom: 24,
-    left: 16,
-    right: 16,
-    height: 72,
-    borderRadius: 36,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    backgroundColor: 'rgba(15, 23, 42, 0.9)'
+    position: 'absolute', bottom: 24, left: 16, right: 16, height: 72,
+    borderRadius: 36, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
+    overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', backgroundColor: 'rgba(15, 23, 42, 0.9)'
   },
   navFab: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#fbbf24', marginTop: -24, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#0f172a' },
   navItem: { alignItems: 'center', gap: 4, width: 60 },
