@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert,
 import {
     ArrowLeft, MoreVertical, History, Crown, BadgeCheck, Zap,
     Check, CheckCheck, Shield, Camera, Plus, ClipboardList, Mic,
-    PlusCircle, Smile, Send, Trash2
+    PlusCircle, Smile, Send, Trash2, Clock, Info
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -43,13 +43,25 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
     const [recording, setRecording] = useState<Audio.Recording | null>(null);
     const [isRecording, setIsRecording] = useState(false); // To trigger UI updates reliably
     const [recordingDuration, setRecordingDuration] = useState(0);
+    const [cleanedCount, setCleanedCount] = useState(0); // Track auto-cleaned messages
 
-    // Timer effect for recording
+    // Audio recording constants
+    const MAX_AUDIO_DURATION = 5; // 5 seconds max for audio messages
+    const recordingRef = useRef<Audio.Recording | null>(null); // Ref for auto-stop access
+
+    // Timer effect for recording with auto-stop at 5 seconds
     useEffect(() => {
         let interval: any;
         if (isRecording) {
             interval = setInterval(() => {
-                setRecordingDuration(prev => prev + 1);
+                setRecordingDuration(prev => {
+                    const newDuration = prev + 1;
+                    // Auto-stop at MAX_AUDIO_DURATION
+                    if (newDuration >= MAX_AUDIO_DURATION && recordingRef.current) {
+                        stopRecordingAndSend();
+                    }
+                    return newDuration;
+                });
             }, 1000);
         } else {
             setRecordingDuration(0);
@@ -109,8 +121,68 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
         return true;
     };
 
+    // Auto-cleanup: Delete messages older than 3 days
+    const cleanupOldMessages = async () => {
+        try {
+            const threeDaysAgo = new Date();
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+            const cutoffDate = threeDaysAgo.toISOString();
+
+            // 1. Find old messages with media to delete from storage
+            const { data: oldMediaMessages } = await supabase
+                .from('messages')
+                .select('id, media_url, type')
+                .eq('family_id', familyId)
+                .lt('created_at', cutoffDate)
+                .in('type', ['image', 'audio']);
+
+            if (oldMediaMessages && oldMediaMessages.length > 0) {
+                const filesToDelete: string[] = [];
+                oldMediaMessages.forEach(msg => {
+                    if (msg.media_url) {
+                        try {
+                            const fileName = msg.media_url.split('/').pop();
+                            if (fileName) filesToDelete.push(fileName);
+                        } catch (e) { console.log('Error parsing url', e) }
+                    }
+                });
+
+                if (filesToDelete.length > 0) {
+                    const { error: storageError } = await supabase.storage
+                        .from('chat-media')
+                        .remove(filesToDelete);
+                    if (storageError) console.log('Auto-cleanup storage error:', storageError);
+                    else console.log('Auto-cleaned storage files:', filesToDelete.length);
+                }
+            }
+
+            // 2. Delete old messages from database
+            const { data: deletedMessages, error } = await supabase
+                .from('messages')
+                .delete()
+                .eq('family_id', familyId)
+                .lt('created_at', cutoffDate)
+                .select('id');
+
+            if (error) {
+                console.log('Auto-cleanup DB error:', error);
+            } else if (deletedMessages && deletedMessages.length > 0) {
+                console.log('Auto-cleaned messages:', deletedMessages.length);
+                setCleanedCount(deletedMessages.length);
+            }
+        } catch (err) {
+            console.log('Auto-cleanup error:', err);
+        }
+    };
+
     // Load messages from Supabase on mount & Realtime subscription
     useEffect(() => {
+        // Run auto-cleanup first, then fetch messages
+        const initializeChat = async () => {
+            await cleanupOldMessages();
+            await fetchMessages();
+        };
+
         const fetchMessages = async () => {
             const { data, error } = await supabase
                 .from('messages')
@@ -141,7 +213,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
             }
         };
 
-        fetchMessages();
+        initializeChat();
 
         // Realtime Subscription
         const channel = supabase.channel('family-chat')
@@ -259,13 +331,19 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
         }
     };
 
-    const handleAudio = async () => {
-        if (recording) {
-            console.log('Stopping recording..');
-            const finalDuration = formatDuration(recordingDuration);
-            setIsRecording(false);
-            await recording.stopAndUnloadAsync();
-            const uri = recording.getURI();
+    // Stop recording and send (extracted for auto-stop)
+    const stopRecordingAndSend = async () => {
+        const currentRecording = recordingRef.current;
+        if (!currentRecording) return;
+
+        console.log('Stopping recording..');
+        const finalDuration = formatDuration(recordingDuration);
+        setIsRecording(false);
+
+        try {
+            await currentRecording.stopAndUnloadAsync();
+            const uri = currentRecording.getURI();
+            recordingRef.current = null;
             setRecording(null);
 
             if (uri) {
@@ -288,6 +366,15 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                     });
                 }
             }
+        } catch (err) {
+            console.error('Error stopping recording:', err);
+        }
+    };
+
+    const handleAudio = async () => {
+        if (recording) {
+            // Manual stop
+            await stopRecordingAndSend();
         } else {
             // Quota Check before starting recording
             const canSend = await checkQuota();
@@ -301,8 +388,13 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                     return;
                 }
                 await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-                const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-                setRecording(recording);
+
+                // Use LOW_QUALITY preset for compression (saves ~80% storage)
+                const { recording: newRecording } = await Audio.Recording.createAsync(
+                    Audio.RecordingOptionsPresets.LOW_QUALITY
+                );
+                recordingRef.current = newRecording;
+                setRecording(newRecording);
                 setIsRecording(true);
             } catch (err) {
                 console.error('Failed to start recording', err);
@@ -453,6 +545,14 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                 </TouchableOpacity>
             </BlurView>
 
+            {/* Auto-Cleanup Info Banner */}
+            <View style={styles.infoBanner}>
+                <Clock size={14} color="#9ca3af" />
+                <Text style={styles.infoBannerText}>
+                    Mesajlar 3 gün sonra otomatik silinir
+                </Text>
+            </View>
+
             {/* Chat Stream */}
             <ScrollView
                 ref={scrollViewRef}
@@ -460,6 +560,15 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                 showsVerticalScrollIndicator={true}
                 onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
             >
+                {cleanedCount > 0 && (
+                    <View style={styles.cleanupNotice}>
+                        <Info size={12} color="#60a5fa" />
+                        <Text style={styles.cleanupNoticeText}>
+                            {cleanedCount} eski mesaj otomatik temizlendi
+                        </Text>
+                    </View>
+                )}
+
                 <View style={styles.dateDividerContainer}>
                     <View style={styles.dateDivider}>
                         <Text style={styles.dateText}>BUGÜN</Text>
@@ -591,7 +700,9 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                     >
                         <Mic size={14} color={isRecording ? "#f87171" : "#d1d5db"} />
                         <Text style={[styles.actionChipText, isRecording && { color: '#f87171' }]}>
-                            {isRecording ? formatDuration(recordingDuration) : "Sesli Mesaj Yolla"}
+                            {isRecording
+                                ? `${formatDuration(recordingDuration)} / 0:05`
+                                : "Sesli Mesaj (5sn)"}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -722,5 +833,40 @@ const styles = StyleSheet.create({
     textInput: { flex: 1, color: '#fff', fontSize: 14, height: '100%', paddingVertical: 12 },
     emojiBtn: { padding: 12 },
 
-    sendBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#fbbd23', justifyContent: 'center', alignItems: 'center', shadowColor: '#fbbd23', shadowOpacity: 0.4, shadowRadius: 10 }
+    sendBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#fbbd23', justifyContent: 'center', alignItems: 'center', shadowColor: '#fbbd23', shadowOpacity: 0.4, shadowRadius: 10 },
+
+    // Auto-cleanup info banner
+    infoBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        backgroundColor: 'rgba(156, 163, 175, 0.1)',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.05)'
+    },
+    infoBannerText: {
+        color: '#9ca3af',
+        fontSize: 12,
+        fontWeight: '500'
+    },
+    cleanupNotice: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        backgroundColor: 'rgba(96, 165, 250, 0.1)',
+        borderRadius: 8,
+        marginBottom: 8,
+        alignSelf: 'center'
+    },
+    cleanupNoticeText: {
+        color: '#60a5fa',
+        fontSize: 11,
+        fontWeight: '500'
+    }
 });
