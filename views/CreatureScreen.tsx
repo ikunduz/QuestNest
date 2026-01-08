@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Utensils, Moon, Sun, Heart, Zap, Timer, Coins, Sparkles, Hand } from 'lucide-react-native';
 import { UserState, PetState, EvolutionStage } from '../types';
+import i18n from '../i18n';
 
 const { width, height } = Dimensions.get('window');
 
@@ -14,13 +15,13 @@ interface CreatureScreenProps {
     onUpdatePet: (updates: Partial<PetState>) => void;
 }
 
-const STAGE_CONFIG: Record<EvolutionStage, { goal: number; label: string; next?: EvolutionStage }> = {
-    egg: { goal: 500, label: 'EJDERHA YUMURTASI', next: 'hatching' },
-    hatching: { goal: 0, label: 'YUMURTA ÇATLIYOR...', next: 'baby' },
-    baby: { goal: 1500, label: 'BEBEK EJDERHA', next: 'teen' },
-    teen: { goal: 3000, label: 'GENÇ EJDERHA', next: 'adult' },
-    adult: { goal: 10000, label: 'YETİŞKİN EJDERHA' }
-};
+const getStageConfig = (): Record<EvolutionStage, { goal: number; label: string; next?: EvolutionStage }> => ({
+    egg: { goal: 500, label: i18n.t('creature.egg').toUpperCase(), next: 'hatching' },
+    hatching: { goal: 0, label: i18n.t('creature.hatching'), next: 'baby' },
+    baby: { goal: 1500, label: i18n.t('creature.baby').toUpperCase(), next: 'teen' },
+    teen: { goal: 3000, label: i18n.t('creature.teen').toUpperCase(), next: 'adult' },
+    adult: { goal: 10000, label: i18n.t('creature.adult').toUpperCase() }
+});
 
 const EVOLUTION_DURATION = 24 * 60 * 60 * 1000;
 
@@ -29,7 +30,7 @@ export const CreatureScreen: React.FC<CreatureScreenProps> = ({ user, onUpdateUs
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const [isSleeping, setIsSleeping] = useState(false);
-    const config = STAGE_CONFIG[pet.stage];
+    const config = getStageConfig()[pet.stage];
 
     useEffect(() => {
         Animated.loop(
@@ -66,7 +67,7 @@ export const CreatureScreen: React.FC<CreatureScreenProps> = ({ user, onUpdateUs
     };
 
     const handlePet = () => {
-        if (isSleeping) { Alert.alert("Şşşt!", "Ignis uyuyor."); return; }
+        if (isSleeping) { Alert.alert(i18n.t('creature.sleeping'), i18n.t('creature.sleepingMessage')); return; }
         Vibration.vibrate(50);
         Animated.sequence([
             Animated.timing(scaleAnim, { toValue: 1.15, duration: 100, useNativeDriver: true }),
@@ -78,7 +79,7 @@ export const CreatureScreen: React.FC<CreatureScreenProps> = ({ user, onUpdateUs
     const handleFeed = () => {
         if (isSleeping || pet.stage === 'hatching') return;
         const cost = 50;
-        if (user.xp * 5 < cost) { Alert.alert("Yetersiz Altın!", "Görev tamamla!"); return; }
+        if (user.xp * 5 < cost) { Alert.alert(i18n.t('creature.needMoreGold'), i18n.t('creature.completeQuests')); return; }
         onUpdateUser({ xp: Math.max(0, user.xp - 10) });
         const newGoldSpent = pet.goldSpent + cost;
         const progress = Math.min(100, (newGoldSpent / config.goal) * 100);
@@ -86,7 +87,7 @@ export const CreatureScreen: React.FC<CreatureScreenProps> = ({ user, onUpdateUs
         if (progress >= 100 && config.next) {
             updates.stage = config.next as EvolutionStage;
             updates.evolutionStartTime = Date.now();
-            Alert.alert("EVRİM!", "24 saat sonra görüşürüz.");
+            Alert.alert(i18n.t('creature.evolution'), i18n.t('creature.evolutionMessage'));
         }
         onUpdatePet(updates);
     };
@@ -159,7 +160,7 @@ export const CreatureScreen: React.FC<CreatureScreenProps> = ({ user, onUpdateUs
                         </View>
                     ) : (
                         <>
-                            <Text style={styles.goalLabel}>GELİŞİM HEDEFİ</Text>
+                            <Text style={styles.goalLabel}>{i18n.t('creature.evolutionGoal')}</Text>
                             <View style={styles.progressBarBg}>
                                 <LinearGradient colors={['#fbbf24', '#f59e0b']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.progressBarFill, { width: `${pet.evolution}%` }]} />
                             </View>
@@ -175,7 +176,7 @@ export const CreatureScreen: React.FC<CreatureScreenProps> = ({ user, onUpdateUs
                     <BlurView intensity={60} tint="light" style={styles.actionCircle}>
                         <Utensils size={26} color="#f59e0b" />
                     </BlurView>
-                    <Text style={styles.actionLabel}>BESLE</Text>
+                    <Text style={styles.actionLabel}>{i18n.t('creature.feed').toUpperCase()}</Text>
                     <Text style={styles.actionCost}>50g</Text>
                 </TouchableOpacity>
 
@@ -183,15 +184,15 @@ export const CreatureScreen: React.FC<CreatureScreenProps> = ({ user, onUpdateUs
                     <LinearGradient colors={['#ec4899', '#db2777']} style={styles.mainActionCircle}>
                         <Hand size={32} color="#fff" />
                     </LinearGradient>
-                    <Text style={styles.mainActionLabel}>SEV</Text>
+                    <Text style={styles.mainActionLabel}>{i18n.t('creature.pet').toUpperCase()}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.actionButton} onPress={handleSleep}>
                     <BlurView intensity={60} tint={isSleeping ? "dark" : "light"} style={styles.actionCircle}>
                         {isSleeping ? <Sun size={26} color="#fbbf24" /> : <Moon size={26} color="#818cf8" />}
                     </BlurView>
-                    <Text style={styles.actionLabel}>{isSleeping ? 'UYAN' : 'UYUT'}</Text>
-                    <Text style={styles.actionCost}>Bedava</Text>
+                    <Text style={styles.actionLabel}>{isSleeping ? i18n.t('creature.wake').toUpperCase() : i18n.t('creature.sleep').toUpperCase()}</Text>
+                    <Text style={styles.actionCost}>{i18n.t('creature.free')}</Text>
                 </TouchableOpacity>
             </View>
         </View>

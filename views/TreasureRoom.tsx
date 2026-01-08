@@ -5,6 +5,7 @@ import { BlurView } from 'expo-blur';
 import { ShoppingBag, Coins, ArrowLeft } from 'lucide-react-native';
 import { ConfettiEffect } from '../components/ConfettiEffect';
 import { Reward } from '../types';
+import i18n from '../i18n';
 
 const { width } = Dimensions.get('window');
 
@@ -21,22 +22,22 @@ export const TreasureRoom: React.FC<TreasureRoomProps> = ({ xp, rewards, onRedee
 
   const handlePurchase = (reward: Reward) => {
     if (xp < reward.cost) {
-      Alert.alert('💰 Yetersiz Altın', `Bu ödül için ${reward.cost} Altın gerekiyor.`);
+      Alert.alert(`💰 ${i18n.t('treasure.notEnoughGold')}`, i18n.t('treasure.needMoreGold'));
       return;
     }
 
     Alert.alert(
       `${reward.icon} ${reward.name}`,
-      `Bu ödülü ${reward.cost} Altın karşılığında almak istiyor musun?`,
+      `${reward.cost} ${i18n.t('common.gold')}?`,
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: i18n.t('common.cancel'), style: 'cancel' },
         {
-          text: 'SATIN AL!',
+          text: i18n.t('treasure.buy').toUpperCase(),
           onPress: () => {
             setPurchasedId(reward.id);
             setShowConfetti(true);
             onRedeem(reward);
-            Alert.alert('🎉 Harika!', `${reward.name} senin oldu!`);
+            Alert.alert(`🎉 ${i18n.t('treasure.rewardPurchased')}`, `${reward.name} ${i18n.t('treasure.parentNotified')}`);
             setTimeout(() => setPurchasedId(null), 2000);
           }
         }
@@ -71,7 +72,7 @@ export const TreasureRoom: React.FC<TreasureRoomProps> = ({ xp, rewards, onRedee
         <TouchableOpacity style={styles.iconButton} onPress={onBack}>
           <ArrowLeft color="#fff" size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Hazine Odası</Text>
+        <Text style={styles.headerTitle}>{i18n.t('treasure.title')}</Text>
         <View style={{ width: 40 }} />
       </BlurView>
 
@@ -79,7 +80,7 @@ export const TreasureRoom: React.FC<TreasureRoomProps> = ({ xp, rewards, onRedee
 
         {/* Hero Section: Balance */}
         <View style={styles.balanceContainer}>
-          <Text style={styles.balanceLabel}>EĞLENCE FONU</Text>
+          <Text style={styles.balanceLabel}>{i18n.t('treasure.yourGold').toUpperCase()}</Text>
           <View style={styles.balanceCard}>
             <LinearGradient
               colors={['rgba(251, 191, 36, 0.1)', 'rgba(0,0,0,0)']}
@@ -91,7 +92,7 @@ export const TreasureRoom: React.FC<TreasureRoomProps> = ({ xp, rewards, onRedee
               <Text style={styles.balanceValue}>{xp}</Text>
               <View style={styles.balanceType}>
                 <Coins size={16} color="#fbbf24" fill="#fbbf24" />
-                <Text style={styles.balanceTypeName}>ALTIN</Text>
+                <Text style={styles.balanceTypeName}>{i18n.t('common.gold').toUpperCase()}</Text>
               </View>
             </View>
           </View>
@@ -110,7 +111,7 @@ export const TreasureRoom: React.FC<TreasureRoomProps> = ({ xp, rewards, onRedee
                   {/* REMOVED THE FOGGY GRADIENT HERE */}
                   <Text style={{ fontSize: 64 }}>{reward.icon}</Text>
                   <View style={[styles.rarityBadge, { backgroundColor: canAfford ? 'rgba(34, 197, 94, 0.2)' : 'rgba(15, 23, 42, 0.6)' }]}>
-                    <Text style={[styles.rarityText, { color: canAfford ? '#4ade80' : '#94a3b8' }]}>{canAfford ? 'ALINABİLİR' : 'KİLİTLİ'}</Text>
+                    <Text style={[styles.rarityText, { color: canAfford ? '#4ade80' : '#94a3b8' }]}>{canAfford ? i18n.t('treasure.availableRewards').toUpperCase().split(' ')[0] : i18n.t('castle.locked').toUpperCase()}</Text>
                   </View>
                 </View>
 
@@ -135,7 +136,7 @@ export const TreasureRoom: React.FC<TreasureRoomProps> = ({ xp, rewards, onRedee
                       />
                     )}
                     <Text style={[styles.redeemText, canAfford ? styles.redeemTextActive : styles.redeemTextDisabled]}>
-                      {canAfford ? 'SATIN AL' : 'YETERSİZ ALTIN'}
+                      {canAfford ? i18n.t('treasure.buy').toUpperCase() : i18n.t('treasure.notEnoughGold').toUpperCase()}
                     </Text>
                   </TouchableOpacity>
                 </View>

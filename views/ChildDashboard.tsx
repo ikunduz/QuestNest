@@ -7,9 +7,10 @@ import {
   BookOpen, Star, Repeat, CalendarCheck
 } from 'lucide-react-native';
 import { AvatarSelector } from '../components/AvatarSelector';
-import { CATEGORY_METADATA } from '../constants';
+import { getCategoryMetadata } from '../constants';
 import { Quest, UserState } from '../types';
 import { getAvatarEmoji } from '../constants/avatars';
+import i18n from '../i18n';
 
 
 const { width } = Dimensions.get('window');
@@ -66,7 +67,7 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
     if (photoUrl) onUpdateUser({ avatar: photoUrl });
     else if (avatarId) onUpdateUser({ avatar: avatarId });
     setShowAvatarSelector(false);
-    Alert.alert('✅', 'Avatar güncellendi!');
+    Alert.alert('✅', i18n.t('child.avatarUpdated'));
   };
 
   const getNextLevelXP = (level: number) => level * 100;
@@ -81,7 +82,7 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
           <TouchableOpacity onPress={() => setShowAvatarSelector(false)} style={styles.backButton}>
             <ChevronRight color="#fbbf24" size={24} style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>AVATAR SEÇ</Text>
+          <Text style={styles.headerTitle}>{i18n.t('child.selectAvatar')}</Text>
         </View>
         <AvatarSelector currentAvatar={user.avatar} userRole="child" onSelect={handleAvatarSelect} />
       </View>
@@ -128,10 +129,10 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
               </TouchableOpacity>
 
               <View style={styles.userInfoExpanded}>
-                <Text style={styles.userNameLarge}>Kahraman {user.name}</Text>
+                <Text style={styles.userNameLarge}>{i18n.t('child.hero')} {user.name}</Text>
                 <View style={styles.titleBadge}>
                   <Text style={styles.userTitleLarge}>
-                    {user.heroClass === 'mage' ? 'Çırak Büyücü' : user.heroClass === 'ranger' ? 'Acemi Okçu' : 'Şövalye Yardımcısı'}
+                    {user.heroClass === 'mage' ? i18n.t('child.apprenticeWizard') : user.heroClass === 'ranger' ? i18n.t('child.noviceArcher') : i18n.t('child.knightSquire')}
                   </Text>
                 </View>
               </View>
@@ -145,7 +146,7 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
                   <Text style={styles.statEmoji}>🪙</Text>
                 </LinearGradient>
                 <View>
-                  <Text style={styles.statLabelHeader}>TOPLAM ALTIN</Text>
+                  <Text style={styles.statLabelHeader}>{i18n.t('child.totalGold')}</Text>
                   <Text style={styles.statValueHeader}>{user.xp}</Text>
                 </View>
               </View>
@@ -159,10 +160,10 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
         <BlurView intensity={30} tint="dark" style={styles.xpCard}>
           <View style={styles.xpCardHeader}>
             <View>
-              <Text style={styles.xpLabel}>KUMBARA (Altın Birikimi)</Text>
-              <Text style={styles.xpValue}>{user.xp} <Text style={styles.xpTotal}>/ {getNextLevelXP(user.level)} ALTIN</Text></Text>
+              <Text style={styles.xpLabel}>{i18n.t('child.piggyBank')}</Text>
+              <Text style={styles.xpValue}>{user.xp} <Text style={styles.xpTotal}>/ {getNextLevelXP(user.level)} {i18n.t('child.gold')}</Text></Text>
             </View>
-            <Text style={styles.xpRemaining}>Seviye {user.level + 1} için {getNextLevelXP(user.level) - user.xp} Altın</Text>
+            <Text style={styles.xpRemaining}>{i18n.t('child.goldNeeded')} {user.level + 1}: {getNextLevelXP(user.level) - user.xp}</Text>
           </View>
           <View style={styles.xpBarContainer}>
             <Animated.View
@@ -191,7 +192,7 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
               <View style={[styles.sectionIndicator, { backgroundColor: '#8b5cf6' }]} />
-              <Text style={styles.sectionTitle}>Günlük Rutinler</Text>
+              <Text style={styles.sectionTitle}>{i18n.t('child.dailyRoutines')}</Text>
             </View>
           </View>
         )}
@@ -200,8 +201,8 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
           {routinesTodo.map((quest) => (
             <TouchableOpacity key={quest.id} onPress={() => onComplete(quest.id)}>
               <BlurView intensity={20} tint="light" style={styles.habitCard}>
-                <View style={[styles.habitIconBox, { backgroundColor: CATEGORY_METADATA[quest.category].color + '20' }]}>
-                  {React.cloneElement(CATEGORY_METADATA[quest.category].icon as React.ReactElement, { size: 24, color: CATEGORY_METADATA[quest.category].color } as any)}
+                <View style={[styles.habitIconBox, { backgroundColor: getCategoryMetadata()[quest.category].color + '20' }]}>
+                  {React.cloneElement(getCategoryMetadata()[quest.category].icon as React.ReactElement, { size: 24, color: getCategoryMetadata()[quest.category].color } as any)}
                 </View>
                 <Text style={styles.habitTitle}>{quest.titleKey}</Text>
                 <View style={styles.habitXpBadge}>
@@ -217,7 +218,7 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
               </View>
               <Text style={[styles.habitTitle, styles.habitTitleDone]}>{quest.titleKey}</Text>
               <Text style={[styles.habitDoneText, { color: quest.status === 'pending_approval' ? '#a855f7' : '#10b981' }]}>
-                {quest.status === 'pending_approval' ? 'Onay Bekliyor' : 'Tamamlandı'}
+                {quest.status === 'pending_approval' ? i18n.t('child.waitingApproval') : i18n.t('child.completed')}
               </Text>
             </View>
           ))}
@@ -228,10 +229,10 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
             <View style={styles.sectionIndicator} />
-            <Text style={styles.sectionTitle}>Günlük Görevler</Text>
+            <Text style={styles.sectionTitle}>{i18n.t('child.dailyQuests')}</Text>
           </View>
           <View style={styles.progressBadge}>
-            <Text style={styles.progressText}>{dailyQuests.filter(q => q.status === 'completed').length}/{dailyQuests.length} Tamamlandı</Text>
+            <Text style={styles.progressText}>{dailyQuests.filter(q => q.status === 'completed').length}/{dailyQuests.length} {i18n.t('child.completed')}</Text>
           </View>
         </View>
 
@@ -239,13 +240,13 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
           {dailyQuests.length === 0 ? (
             <View style={styles.emptyState}>
               <Check size={40} color="#10b981" />
-              <Text style={styles.emptyStateText}>Tüm günlük görevler tamam!</Text>
+              <Text style={styles.emptyStateText}>{i18n.t('child.allDailyComplete')}</Text>
             </View>
           ) : (
             dailyQuests.map((quest) => (
               <BlurView key={quest.id} intensity={20} tint="light" style={styles.questItem}>
-                <View style={[styles.questIconBox, { backgroundColor: CATEGORY_METADATA[quest.category].color + '20', borderColor: CATEGORY_METADATA[quest.category].color + '40' }]}>
-                  {React.cloneElement(CATEGORY_METADATA[quest.category].icon as React.ReactElement, { size: 28, color: CATEGORY_METADATA[quest.category].color } as any)}
+                <View style={[styles.questIconBox, { backgroundColor: getCategoryMetadata()[quest.category].color + '20', borderColor: getCategoryMetadata()[quest.category].color + '40' }]}>
+                  {React.cloneElement(getCategoryMetadata()[quest.category].icon as React.ReactElement, { size: 28, color: getCategoryMetadata()[quest.category].color } as any)}
                 </View>
                 <View style={styles.questInfo}>
                   <Text style={styles.questTitleItem}>{quest.titleKey}</Text>
@@ -254,14 +255,14 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
                     <View style={styles.xpTag}>
                       <Text style={styles.xpTagText}>{quest.xpReward} XP</Text>
                     </View>
-                    <View style={[styles.typeTag, { backgroundColor: CATEGORY_METADATA[quest.category].color + '20', borderColor: CATEGORY_METADATA[quest.category].color + '40' }]}>
-                      <Text style={[styles.typeTagText, { color: CATEGORY_METADATA[quest.category].color }]}>{quest.category}</Text>
+                    <View style={[styles.typeTag, { backgroundColor: getCategoryMetadata()[quest.category].color + '20', borderColor: getCategoryMetadata()[quest.category].color + '40' }]}>
+                      <Text style={[styles.typeTagText, { color: getCategoryMetadata()[quest.category].color }]}>{i18n.t(`categories.${quest.category}`)}</Text>
                     </View>
                   </View>
                 </View>
                 <TouchableOpacity onPress={() => onComplete(quest.id)} style={styles.claimButton}>
                   <LinearGradient colors={['#fbbf24', '#f59e0b']} style={styles.claimButtonGradient}>
-                    <Text style={styles.claimButtonText}>Tamamla</Text>
+                    <Text style={styles.claimButtonText}>{i18n.t('child.complete')}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </BlurView>
@@ -274,7 +275,7 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
               <View style={[styles.sectionHeader, { marginTop: 24 }]}>
                 <View style={styles.sectionTitleContainer}>
                   <View style={[styles.sectionIndicator, { backgroundColor: '#a855f7' }]} />
-                  <Text style={styles.sectionTitle}>Onay Bekliyor</Text>
+                  <Text style={styles.sectionTitle}>{i18n.t('child.waitingApproval')}</Text>
                 </View>
               </View>
               {pendingQuests.map((quest) => (
@@ -284,7 +285,7 @@ export const ChildDashboard: React.FC<ChildDashboardProps> = ({ user, quests, on
                   </View>
                   <View style={styles.questInfo}>
                     <Text style={styles.questTitleItem}>{quest.titleKey}</Text>
-                    <Text style={styles.questDescItem}>Ebeveyn onayı bekleniyor...</Text>
+                    <Text style={styles.questDescItem}>{i18n.t('child.parentApprovalPending')}</Text>
                   </View>
                   <View style={styles.statusIcon}>
                     <Text>⏳</Text>

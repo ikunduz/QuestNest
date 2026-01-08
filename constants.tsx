@@ -13,42 +13,44 @@ import {
 } from 'lucide-react-native';
 import { Quest, QuestCategory, Reward } from './types';
 
-export const CATEGORY_METADATA: Record<QuestCategory, { icon: React.ReactNode, color: string, label: string }> = {
+import i18n from './i18n';
+
+export const getCategoryMetadata = (): Record<QuestCategory, { icon: React.ReactNode, color: string, label: string }> => ({
   care: {
     icon: <Heart size={24} color="#fb7185" />,
     color: '#fb7185',
-    label: 'Kişisel Bakım'
+    label: i18n.t('categories.care')
   },
   study: {
     icon: <BookOpen size={24} color="#60a5fa" />,
     color: '#3b82f6',
-    label: 'Bilgelik Yolu'
+    label: i18n.t('categories.study')
   },
   clean: {
     icon: <Trash2 size={24} color="#10b981" />,
     color: '#10b981',
-    label: 'Krallık Temizliği'
+    label: i18n.t('categories.clean')
   },
   magic: {
     icon: <Sparkles size={24} color="#f59e0b" />,
     color: '#f59e0b',
-    label: 'Özel Görev'
+    label: i18n.t('categories.magic')
   },
-};
+});
 
-export const INITIAL_REWARDS: Reward[] = [
-  { id: '1', name: 'Efsanevi Pizza Gecesi', cost: 500, type: 'real', icon: '🍕', isUnlocked: false },
-  { id: '2', name: '30 Dakika Ekran Zamanı', cost: 150, type: 'digital', icon: '🎮', isUnlocked: false },
-  { id: '3', name: 'Geç Uyuma Hakkı (1 Saat)', cost: 300, type: 'real', icon: '🌙', isUnlocked: false },
-  { id: '4', name: 'Yeni Kahraman Kıyafeti', cost: 100, type: 'digital', icon: '🛡️', isUnlocked: false },
-  { id: '5', name: 'Park Macerası Seçimi', cost: 400, type: 'real', icon: '🌳', isUnlocked: false },
+export const getInitialRewards = (): Reward[] => [
+  { id: '1', name: i18n.t('initialRewards.pizzaNight'), cost: 500, type: 'real', icon: '🍕', isUnlocked: false },
+  { id: '2', name: i18n.t('initialRewards.screenTime'), cost: 150, type: 'digital', icon: '🎮', isUnlocked: false },
+  { id: '3', name: i18n.t('initialRewards.lateSleep'), cost: 300, type: 'real', icon: '🌙', isUnlocked: false },
+  { id: '4', name: i18n.t('initialRewards.heroOutfit'), cost: 100, type: 'digital', icon: '🛡️', isUnlocked: false },
+  { id: '5', name: i18n.t('initialRewards.parkAdventure'), cost: 400, type: 'real', icon: '🌳', isUnlocked: false },
 ];
 
-export const INITIAL_QUESTS: Quest[] = [
+export const getInitialQuests = (): Quest[] => [
   {
     id: 'q1',
-    titleKey: 'Diş Fırçalama Ritüeli',
-    description: 'Dişlerini fırçalayarak inci beyazı kalkanını güçlendir!',
+    titleKey: i18n.t('initialQuests.brushTeethTitle'),
+    description: i18n.t('initialQuests.brushTeethDesc'),
     xpReward: 20,
     status: 'active',
     category: 'care',
@@ -56,8 +58,8 @@ export const INITIAL_QUESTS: Quest[] = [
   },
   {
     id: 'q2',
-    titleKey: 'Oda Toplama Büyüsü',
-    description: 'Oyuncak canavarları ait oldukları kutulara hapset.',
+    titleKey: i18n.t('initialQuests.cleanRoomTitle'),
+    description: i18n.t('initialQuests.cleanRoomDesc'),
     xpReward: 50,
     status: 'active',
     category: 'clean',

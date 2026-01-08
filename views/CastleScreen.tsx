@@ -3,11 +3,12 @@ import { View, StyleSheet, Text, TouchableOpacity, Alert, Modal } from 'react-na
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Hammer, Coins, Plus, Info } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
+import i18n from '../i18n';
 
 import { GridSystem } from '../components/CastleGame/GridSystem';
 import { BuildingMenu } from '../components/CastleGame/BuildingMenu';
 import { PlacedBuilding } from '../components/CastleGame/types';
-import { BUILDINGS } from '../components/CastleGame/constants';
+import { getBuildings } from '../components/CastleGame/constants';
 
 interface CastleScreenProps {
     userId: string;
@@ -53,11 +54,11 @@ export const CastleScreen: React.FC<CastleScreenProps> = ({
 
     const handlePlaceBuilding = (x: number, y: number) => {
         if (!selectedBuildingId) return;
-        const buildingType = BUILDINGS.find(b => b.id === selectedBuildingId);
+        const buildingType = getBuildings().find(b => b.id === selectedBuildingId);
         if (!buildingType) return;
 
         if (userGold < buildingType.cost) {
-            Alert.alert('Yetersiz Altın', 'Bu binayı inşa etmek için yeterli altının yok.');
+            Alert.alert(i18n.t('castle.insufficientGold'), i18n.t('castle.noGoldForBuilding'));
             return;
         }
 
@@ -74,7 +75,7 @@ export const CastleScreen: React.FC<CastleScreenProps> = ({
         if (onSpendGold) onSpendGold(buildingType.cost);
         setSelectedBuildingId(null);
         setEditMode(false);
-        Alert.alert('Başarılı', `${buildingType.name} inşa edildi!`);
+        Alert.alert(i18n.t('castle.success'), `${buildingType.name} ${i18n.t('castle.built')}`);
     };
 
     const handleUpgradeBuilding = () => {
@@ -82,7 +83,7 @@ export const CastleScreen: React.FC<CastleScreenProps> = ({
         const upgradeCost = selectedPlacedBuilding.level * 100;
 
         if (userGold < upgradeCost) {
-            Alert.alert('Yetersiz Altın', `Yükseltme için ${upgradeCost} altın gerekli.`);
+            Alert.alert(i18n.t('castle.insufficientGold'), `${i18n.t('castle.upgradeRequired')} ${upgradeCost}`);
             return;
         }
 
@@ -94,18 +95,18 @@ export const CastleScreen: React.FC<CastleScreenProps> = ({
         setBuildings(updatedBuildings);
         if (onSpendGold) onSpendGold(upgradeCost);
         setSelectedPlacedBuilding(null);
-        Alert.alert('Yükseltildi!', 'Bina seviyesi arttı.');
+        Alert.alert(i18n.t('castle.upgraded'), i18n.t('castle.levelIncreased'));
     };
 
     const handleDeleteBuilding = () => {
         if (!selectedPlacedBuilding) return;
         Alert.alert(
-            'Binayı Yık',
-            'Bu binayı yıkmak istediğine emin misin? Harcadığın altınlar geri gelmez.',
+            i18n.t('castle.destroyBuilding'),
+            i18n.t('castle.destroyConfirm'),
             [
-                { text: 'İptal', style: 'cancel' },
+                { text: i18n.t('castle.cancel'), style: 'cancel' },
                 {
-                    text: 'Yık',
+                    text: i18n.t('castle.destroy'),
                     style: 'destructive',
                     onPress: () => {
                         setBuildings(prev => prev.filter(b => b.id !== selectedPlacedBuilding.id));
@@ -120,7 +121,7 @@ export const CastleScreen: React.FC<CastleScreenProps> = ({
         <View style={styles.container}>
             <BlurView intensity={30} tint="dark" style={styles.header}>
                 <View style={styles.statContainer}>
-                    <Text style={styles.statLabel}>KRALLIK NÜFUSU</Text>
+                    <Text style={styles.statLabel}>{i18n.t('castle.population')}</Text>
                     <Text style={styles.statValue}>{buildings.length * 5}</Text>
                 </View>
                 <View style={[styles.statContainer, styles.goldContainer]}>
@@ -140,7 +141,7 @@ export const CastleScreen: React.FC<CastleScreenProps> = ({
             {!editMode && !selectedPlacedBuilding && (
                 <TouchableOpacity style={styles.buildButton} onPress={() => setEditMode(true)}>
                     <Hammer size={24} color="#0f172a" />
-                    <Text style={styles.buildButtonText}>İNŞA ET</Text>
+                    <Text style={styles.buildButtonText}>{i18n.t('castle.build')}</Text>
                 </TouchableOpacity>
             )}
 
@@ -164,24 +165,24 @@ export const CastleScreen: React.FC<CastleScreenProps> = ({
                             <>
                                 <View style={styles.modalHeader}>
                                     <Text style={styles.modalTitle}>
-                                        {BUILDINGS.find(b => b.id === selectedPlacedBuilding.buildingId)?.name}
+                                        {getBuildings().find(b => b.id === selectedPlacedBuilding.buildingId)?.name}
                                     </Text>
-                                    <Text style={styles.modalLevel}>Seviye {selectedPlacedBuilding.level}</Text>
+                                    <Text style={styles.modalLevel}>{i18n.t('castle.level')} {selectedPlacedBuilding.level}</Text>
                                 </View>
                                 <Text style={styles.modalDesc}>
-                                    {BUILDINGS.find(b => b.id === selectedPlacedBuilding.buildingId)?.description}
+                                    {getBuildings().find(b => b.id === selectedPlacedBuilding.buildingId)?.description}
                                 </Text>
                                 <View style={styles.modalActions}>
                                     <TouchableOpacity style={styles.actionBtn} onPress={handleUpgradeBuilding}>
-                                        <Text style={styles.actionBtnText}>Yükselt ({selectedPlacedBuilding.level * 100} 🪙)</Text>
+                                        <Text style={styles.actionBtnText}>{i18n.t('castle.upgrade')} ({selectedPlacedBuilding.level * 100} 🪙)</Text>
                                     </TouchableOpacity>
                                     {selectedPlacedBuilding.buildingId !== 'castle' && (
                                         <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={handleDeleteBuilding}>
-                                            <Text style={[styles.actionBtnText, styles.deleteBtnText]}>Yık</Text>
+                                            <Text style={[styles.actionBtnText, styles.deleteBtnText]}>{i18n.t('castle.destroy')}</Text>
                                         </TouchableOpacity>
                                     )}
                                     <TouchableOpacity style={[styles.actionBtn, styles.closeBtn]} onPress={() => setSelectedPlacedBuilding(null)}>
-                                        <Text style={styles.closeBtnText}>Kapat</Text>
+                                        <Text style={styles.closeBtnText}>{i18n.t('castle.close')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </>

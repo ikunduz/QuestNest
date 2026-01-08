@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, TouchableOpacity, StyleSheet, Text, ImageBackground } from 'react-native';
 import { PlacedBuilding, BuildingType } from './types';
-import { BUILDINGS, GRID_SIZE, TILE_SIZE } from './constants';
+import { getBuildings, GRID_SIZE, TILE_SIZE } from './constants';
 import { Lock, Hammer, X } from 'lucide-react-native';
 
 interface GridSystemProps {
@@ -23,12 +23,12 @@ export const GridSystem: React.FC<GridSystemProps> = ({
         Array(GRID_SIZE).fill(0).map((_, x) => ({ x, y }))
     );
 
-    const selectedBuildingType = BUILDINGS.find(b => b.id === selectedBuildingId);
+    const selectedBuildingType = getBuildings().find((b: BuildingType) => b.id === selectedBuildingId);
 
     const isOccupied = (x: number, y: number, w: number = 1, h: number = 1, ignoreId?: string) => {
         return buildings.some(b => {
             if (b.id === ignoreId) return false;
-            const bType = BUILDINGS.find(t => t.id === b.buildingId);
+            const bType = getBuildings().find((t: BuildingType) => t.id === b.buildingId);
             if (!bType) return false;
             return (
                 x < b.x + bType.width &&
@@ -74,7 +74,7 @@ export const GridSystem: React.FC<GridSystemProps> = ({
                         </View>
                     ))}
                     {buildings.map(building => {
-                        const bType = BUILDINGS.find(b => b.id === building.buildingId);
+                        const bType = getBuildings().find((b: BuildingType) => b.id === building.buildingId);
                         if (!bType) return null;
                         return (
                             <TouchableOpacity

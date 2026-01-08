@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Crown, User, Shield, Key, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react-native';
 import { createFamily, createUser } from '../services/familyService';
+import i18n from '../i18n';
 
 const { width, height } = Dimensions.get('window');
 
@@ -51,11 +52,11 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
 
     const handleNext = () => {
         if (step === 1 && !familyName.trim()) {
-            Alert.alert("🏰", "Her Krallığın bir isme ihtiyacı var, Majesteleri!");
+            Alert.alert("🏰", i18n.t('auth.everyKingdomNeedsName'));
             return;
         }
         if (step === 2 && !childName.trim()) {
-            Alert.alert("⚔️", "Genç kahramanı tanımlıyın!");
+            Alert.alert("⚔️", i18n.t('auth.identifyHero'));
             return;
         }
 
@@ -64,7 +65,7 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
 
     const handleSetup = async () => {
         if (pin.length !== 4) {
-            Alert.alert("🔐", "Kraliyet Mühürü (PIN) 4 hane olmalıdır!");
+            Alert.alert("🔐", i18n.t('auth.pinMustBe4'));
             return;
         }
 
@@ -74,7 +75,7 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
 
             const parent = await createUser({
                 family_id: family.id,
-                name: 'Lonca Ustası',
+                name: i18n.t('auth.guildMaster'),
                 role: 'parent',
                 parent_type: 'mom',
                 pin_hash: pin
@@ -104,9 +105,9 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
             await AsyncStorage.setItem('questnest_user', JSON.stringify(userState));
 
             Alert.alert(
-                "🎉 KRALLIK KURULDU!",
-                `Aile Kodu: ${familyCode}\n\nBu kodu diğer ebeveynlerle paylaşın!`,
-                [{ text: "DÜNYAYA GİR", onPress: () => navigation.replace('Main', { initialUser: userState }) }]
+                `🎉 ${i18n.t('auth.kingdomCreated')}`,
+                `${i18n.t('auth.yourFamilyCode')} ${familyCode}\n\n${i18n.t('auth.shareWithFamily')}`,
+                [{ text: i18n.t('auth.enterWorld'), onPress: () => navigation.replace('Main', { initialUser: userState }) }]
             );
         } catch (error: any) {
             Alert.alert("Error", error.message);
@@ -120,9 +121,9 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
             case 1:
                 return {
                     icon: <Crown color={THEME_COLOR} size={48} />,
-                    title: "KRALLIĞINI İSİMLENDİR",
-                    subtitle: "Asil evinizi ne diye adlandıralım?",
-                    placeholder: "örn: Pendragon Hanedanlığı",
+                    title: i18n.t('auth.nameYourKingdom'),
+                    subtitle: i18n.t('auth.whatToCallHome'),
+                    placeholder: i18n.t('auth.exampleKingdom'),
                     value: familyName,
                     setValue: setFamilyName,
                     secure: false,
@@ -130,10 +131,10 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
                 };
             case 2:
                 return {
-                    icon: <Shield color="#3b82f6" size={48} />, // Blue
-                    title: "GENÇ KAHRAMAN ADI",
-                    subtitle: "Katılan ilk çırak kim?",
-                    placeholder: "Kahraman Adı",
+                    icon: <Shield color="#3b82f6" size={48} />,
+                    title: i18n.t('auth.youngHeroName'),
+                    subtitle: i18n.t('auth.whoJoinsFirst'),
+                    placeholder: i18n.t('auth.heroName'),
                     value: childName,
                     setValue: setChildName,
                     secure: false,
@@ -141,10 +142,10 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
                 };
             case 3:
                 return {
-                    icon: <Key color="#10b981" size={48} />, // Emerald
-                    title: "GİZLİ MÜHÜR",
-                    subtitle: "Ebeveyn erişimi için 4 haneli PIN oluşturun",
-                    placeholder: "• • • •",
+                    icon: <Key color="#10b981" size={48} />,
+                    title: i18n.t('auth.secretSeal'),
+                    subtitle: i18n.t('auth.createPinForParent'),
+                    placeholder: i18n.t('auth.pinPlaceholder'),
                     value: pin,
                     setValue: (v: string) => setPin(v.replace(/[^0-9]/g, '').substring(0, 4)),
                     secure: true,
@@ -260,11 +261,11 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
                         style={styles.actionBtnGradient}
                     >
                         {loading ? (
-                            <Text style={styles.actionBtnText}>KURULUYOR...</Text>
+                            <Text style={styles.actionBtnText}>{i18n.t('auth.settingUp')}</Text>
                         ) : (
                             <>
                                 <Text style={styles.actionBtnText}>
-                                    {step === 4 ? "KRALLIĞI KUR" : "DEVAM ET"}
+                                    {step === 4 ? i18n.t('auth.setupKingdom') : i18n.t('auth.continue')}
                                 </Text>
                                 <ArrowRight size={20} color="#231d0f" strokeWidth={3} />
                             </>

@@ -6,6 +6,7 @@ import { PawPrint, Castle, Users, User, Shield } from 'lucide-react-native';
 import { CreatureScreen } from './CreatureScreen';
 import { CastleScreen } from './CastleScreen';
 import { UserState, PetState, Role } from '../types';
+import i18n from '../i18n';
 
 interface GameHubProps {
     user: UserState;
@@ -31,7 +32,7 @@ export const GameHub: React.FC<GameHubProps> = ({
                         onPress={() => setActiveSubTab('creature')}
                     >
                         <PawPrint size={16} color={activeSubTab === 'creature' ? '#fbbf24' : '#94a3b8'} />
-                        <Text style={[styles.tabText, activeSubTab === 'creature' && styles.tabTextActive]}>YARATIK</Text>
+                        <Text style={[styles.tabText, activeSubTab === 'creature' && styles.tabTextActive]}>{i18n.t('tabs.creature')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -39,7 +40,7 @@ export const GameHub: React.FC<GameHubProps> = ({
                         onPress={() => setActiveSubTab('castle')}
                     >
                         <Castle size={16} color={activeSubTab === 'castle' ? '#fbbf24' : '#94a3b8'} />
-                        <Text style={[styles.tabText, activeSubTab === 'castle' && styles.tabTextActive]}>KALE</Text>
+                        <Text style={[styles.tabText, activeSubTab === 'castle' && styles.tabTextActive]}>{i18n.t('tabs.castle')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

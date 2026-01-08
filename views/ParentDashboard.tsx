@@ -12,6 +12,7 @@ import { GameButton } from '../components/GameButton';
 import { Reward, Quest, ParentType } from '../types';
 import { getFamilyById, getFamilyMembers } from '../services/familyService';
 import { getAvatarEmoji } from '../constants/avatars';
+import i18n from '../i18n';
 
 // Interface for family members
 interface FamilyMember {
@@ -23,26 +24,30 @@ interface FamilyMember {
   hero_class?: 'knight' | 'mage' | 'ranger';
 }
 
-const HERO_CLASS_LABELS: Record<string, { label: string; color: string }> = {
-  knight: { label: 'Şövalye', color: '#fbbf24' },
-  mage: { label: 'Büyücü', color: '#818cf8' },
-  ranger: { label: 'Okçu', color: '#10b981' },
+// Hero class labels - now using i18n
+const getHeroClassLabel = (heroClass: string) => {
+  const labels: Record<string, { label: string; color: string }> = {
+    knight: { label: i18n.t('parent.knight'), color: '#fbbf24' },
+    mage: { label: i18n.t('parent.mage'), color: '#818cf8' },
+    ranger: { label: i18n.t('parent.ranger'), color: '#10b981' },
+  };
+  return labels[heroClass] || labels.knight;
 };
 
-// Quest Templates for quick adding
-const QUEST_TEMPLATES = [
-  { title: 'Odasını Temizle', category: 'clean', xp: 25, icon: '🧹' },
-  { title: 'Kitap Oku (30 dk)', category: 'study', xp: 30, icon: '📚' },
-  { title: 'Ödev Yap', category: 'study', xp: 35, icon: '✍️' },
-  { title: 'Dişlerini Fırçala', category: 'care', xp: 10, icon: '🪥' },
-  { title: 'Sebze Ye', category: 'care', xp: 20, icon: '🥦' },
-  { title: 'Oyuncakları Topla', category: 'clean', xp: 20, icon: '🧸' },
-  { title: 'Yatağını Yap', category: 'clean', xp: 15, icon: '🛏️' },
-  { title: 'Eğlenceli Aktivite', category: 'magic', xp: 25, icon: '✨' },
-  { title: 'Spor Yap', category: 'care', xp: 30, icon: '⚽' },
-  { title: 'Resim Çiz', category: 'magic', xp: 20, icon: '🎨' },
-  { title: 'Müzik Dinle', category: 'magic', xp: 15, icon: '🎵' },
-  { title: 'Evi Temizlemeye Yardım', category: 'clean', xp: 40, icon: '🏠' },
+// Quest Templates for quick adding - using i18n
+const getQuestTemplates = () => [
+  { title: i18n.t('questTemplates.cleanRoom'), category: 'clean', xp: 25, icon: '🧹' },
+  { title: i18n.t('questTemplates.readBook'), category: 'study', xp: 30, icon: '📚' },
+  { title: i18n.t('questTemplates.doHomework'), category: 'study', xp: 35, icon: '✍️' },
+  { title: i18n.t('questTemplates.brushTeeth'), category: 'care', xp: 10, icon: '🪥' },
+  { title: i18n.t('questTemplates.eatVegetables'), category: 'care', xp: 20, icon: '🥦' },
+  { title: i18n.t('questTemplates.collectToys'), category: 'clean', xp: 20, icon: '🧸' },
+  { title: i18n.t('questTemplates.makeYourBed'), category: 'clean', xp: 15, icon: '🛏️' },
+  { title: i18n.t('questTemplates.funActivity'), category: 'magic', xp: 25, icon: '✨' },
+  { title: i18n.t('questTemplates.doSports'), category: 'care', xp: 30, icon: '⚽' },
+  { title: i18n.t('questTemplates.draw'), category: 'magic', xp: 20, icon: '🎨' },
+  { title: i18n.t('questTemplates.listenMusic'), category: 'magic', xp: 15, icon: '🎵' },
+  { title: i18n.t('questTemplates.helpCleanHouse'), category: 'clean', xp: 40, icon: '🏠' },
 ];
 
 interface ParentDashboardProps {
@@ -172,12 +177,12 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         {/* BABA-DOSTU HEADER - 2 Satır */}
         <View style={styles.dadHeader}>
           <View>
-            <Text style={styles.dadGreetingSmall}>Merhaba,</Text>
-            <Text style={styles.dadGreetingBig}>{parentType === 'dad' ? 'Baba' : 'Anne'} 👋</Text>
+            <Text style={styles.dadGreetingSmall}>{i18n.t('parent.hello')}</Text>
+            <Text style={styles.dadGreetingBig}>{parentType === 'dad' ? i18n.t('parent.dad') : i18n.t('parent.mom')} 👋</Text>
           </View>
           <TouchableOpacity
             style={styles.dadNotifBtn}
-            onPress={() => Alert.alert('📬', 'Bildirimler yakında!')}
+            onPress={() => Alert.alert('📬', i18n.t('parent.notificationsSoon'))}
           >
             <Bell size={22} color="#fbbf24" />
             {pendingQuests.length > 0 && <View style={styles.dadNotifDot} />}
@@ -199,7 +204,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   contentContainerStyle={{ paddingHorizontal: 16 }}
                 >
                   {familyMembers.map((member, index) => {
-                    const heroConfig = HERO_CLASS_LABELS[member.hero_class || 'knight'];
+                    const heroConfig = getHeroClassLabel(member.hero_class || 'knight');
                     const isPhotoUrl = member.avatar && (member.avatar.startsWith('http') || member.avatar.startsWith('file://'));
                     const heroEmoji = member.hero_class === 'mage' ? '🔮' : member.hero_class === 'ranger' ? '🏹' : '🛡️';
                     const avatarEmoji = member.avatar && !isPhotoUrl ? getAvatarEmoji(member.avatar) : heroEmoji;
@@ -216,12 +221,12 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                         <View style={styles.dadChildInfo}>
                           <Text style={styles.dadChildName}>{member.name}</Text>
                           <Text style={[styles.dadChildClass, { color: heroConfig.color }]}>
-                            {heroConfig.label} • Seviye {member.level || 1}
+                            {heroConfig.label} • {i18n.t('child.level')} {member.level || 1}
                           </Text>
                           <View style={styles.dadChildStats}>
                             <View style={styles.dadChildStat}>
                               <Sparkles size={16} color="#fbbf24" />
-                              <Text style={styles.dadChildStatText}>{member.xp || 0} Altın</Text>
+                              <Text style={styles.dadChildStatText}>{member.xp || 0} {i18n.t('common.gold')}</Text>
                             </View>
                           </View>
                         </View>
@@ -244,21 +249,21 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 <View style={styles.dadApprovalHeader}>
                   <Bell size={20} color="#ef4444" />
                   <Text style={styles.dadApprovalTitle}>
-                    {pendingQuests.length} Görev Onay Bekliyor
+                    {pendingQuests.length} {i18n.t('parent.questsWaitingApproval')}
                   </Text>
                 </View>
                 {pendingQuests.slice(0, 3).map((quest) => (
                   <View key={quest.id} style={styles.dadApprovalItem}>
                     <View style={styles.dadApprovalLeft}>
                       <Text style={styles.dadApprovalQuest}>{quest.titleKey}</Text>
-                      <Text style={styles.dadApprovalReward}>+{quest.xpReward} Altın</Text>
+                      <Text style={styles.dadApprovalReward}>+{quest.xpReward} {i18n.t('common.gold')}</Text>
                     </View>
                     <TouchableOpacity
                       style={styles.dadApproveBtn}
                       onPress={() => onApprove(quest.id, quest.xpReward)}
                     >
                       <Check size={20} color="#fff" />
-                      <Text style={styles.dadApproveBtnText}>ONAYLA</Text>
+                      <Text style={styles.dadApproveBtnText}>{i18n.t('parent.approve')}</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -274,7 +279,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 <Text style={styles.dadStatusNumber}>
                   {quests.filter(q => q.status === 'completed').length}
                 </Text>
-                <Text style={styles.dadStatusLabel}>Tamamlanan</Text>
+                <Text style={styles.dadStatusLabel}>{i18n.t('parent.completedQuests')}</Text>
               </View>
               <View style={styles.dadStatusDivider} />
               <View style={styles.dadStatusItem}>
@@ -284,7 +289,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 <Text style={styles.dadStatusNumber}>
                   {familyMembers.reduce((sum, m) => sum + m.xp, 0)}
                 </Text>
-                <Text style={styles.dadStatusLabel}>Toplam Altın</Text>
+                <Text style={styles.dadStatusLabel}>{i18n.t('parent.totalGold')}</Text>
               </View>
               <View style={styles.dadStatusDivider} />
               <View style={styles.dadStatusItem}>
@@ -292,7 +297,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   <Users size={20} color="#818cf8" />
                 </View>
                 <Text style={styles.dadStatusNumber}>{familyMembers.length}</Text>
-                <Text style={styles.dadStatusLabel}>Çocuk</Text>
+                <Text style={styles.dadStatusLabel}>{i18n.t('parent.children')}</Text>
               </View>
             </View>
 
@@ -303,7 +308,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 onPress={() => setIsAdding(true)}
               >
                 <Plus size={24} color="#1e1b4b" />
-                <Text style={styles.dadBigButtonText}>Görev Ekle</Text>
+                <Text style={styles.dadBigButtonText}>{i18n.t('parent.addQuest')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -311,7 +316,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 onPress={() => setIsAddingReward(true)}
               >
                 <Gift size={24} color="#fbbf24" />
-                <Text style={[styles.dadBigButtonText, { color: '#fbbf24' }]}>Ödül Ekle</Text>
+                <Text style={[styles.dadBigButtonText, { color: '#fbbf24' }]}>{i18n.t('parent.addReward')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -320,13 +325,13 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               <TouchableOpacity
                 style={styles.dadSmallBtn}
                 onPress={() => {
-                  if (familyMembers.length === 0) return Alert.alert('Uyarı', 'Çocuk yok.');
+                  if (familyMembers.length === 0) return Alert.alert(i18n.t('common.warning'), i18n.t('parent.noChildren'));
                   setSelectedChild(familyMembers[0]);
                   setShowBonusModal(true);
                 }}
               >
                 <DollarSign size={18} color="#10b981" />
-                <Text style={styles.dadSmallBtnText}>Bonus Ver</Text>
+                <Text style={styles.dadSmallBtnText}>{i18n.t('parent.giveBonus')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -338,19 +343,19 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 }}
               >
                 <Heart size={18} color="#f472b6" />
-                <Text style={styles.dadSmallBtnText}>Kutla</Text>
+                <Text style={styles.dadSmallBtnText}>{i18n.t('parent.celebrate')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.dadSmallBtn}
                 onPress={() => {
                   if (storedFamilyCode) {
-                    Share.share({ message: `QuestNest Aile Kodumuz: ${storedFamilyCode}` });
+                    Share.share({ message: `${i18n.t('parent.familyCodeShare')} ${storedFamilyCode}` });
                   }
                 }}
               >
                 <Share2 size={18} color="#818cf8" />
-                <Text style={styles.dadSmallBtnText}>Davet</Text>
+                <Text style={styles.dadSmallBtnText}>{i18n.t('parent.invite')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -358,14 +363,17 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
             {pendingQuests.length === 0 && (
               <View style={styles.dadAllDone}>
                 <Text style={styles.dadAllDoneEmoji}>✅</Text>
-                <Text style={styles.dadAllDoneText}>Bekleyen görev yok, harika!</Text>
+                <Text style={styles.dadAllDoneText}>{i18n.t('parent.noQuestsPending')}</Text>
               </View>
             )}
           </>
-        ) : (
+        ) : null}
+
+        {/* Rewards Tab */}
+        {activeTab === 'rewards' && (
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Mağaza Yönetimi (Hazine Odası)</Text>
+              <Text style={styles.sectionTitle}>{i18n.t('parent.shopManagement')}</Text>
               <TouchableOpacity onPress={() => setIsAddingReward(true)} style={[styles.navFab, { marginTop: 0, width: 40, height: 40, borderWidth: 0 }]}>
                 <Plus size={24} color="#1e1b4b" />
               </TouchableOpacity>
@@ -378,7 +386,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     <Text style={{ fontSize: 24 }}>{reward.icon}</Text>
                     <View>
                       <Text style={{ color: '#fff', fontWeight: 'bold' }}>{reward.name}</Text>
-                      <Text style={{ color: '#fbbf24', fontSize: 12, fontWeight: 'bold' }}>{reward.cost} Altın</Text>
+                      <Text style={{ color: '#fbbf24', fontSize: 12, fontWeight: 'bold' }}>{reward.cost} {i18n.t('common.gold')}</Text>
                     </View>
                   </View>
                   <TouchableOpacity onPress={() => onDeleteReward(reward.id)} style={{ padding: 8, backgroundColor: 'rgba(239, 68, 68, 0.2)', borderRadius: 8 }}>
@@ -396,7 +404,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
             <View style={styles.sectionContainer}>
               {/* Weekly Stats */}
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Haftalık Özet</Text>
+                <Text style={styles.sectionTitle}>{i18n.t('parent.weeklySummary')}</Text>
               </View>
 
               <View style={styles.statsContainer}>
@@ -407,7 +415,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   <Text style={styles.statValue}>
                     {quests.filter(q => q.status === 'completed').length}
                   </Text>
-                  <Text style={styles.statLabel}>Tamamlanan</Text>
+                  <Text style={styles.statLabel}>{i18n.t('parent.completedQuests')}</Text>
                 </BlurView>
                 <BlurView intensity={15} tint="light" style={styles.statCard}>
                   <View style={[styles.statIconBox, { backgroundColor: '#fbbf2420' }]}>
@@ -416,7 +424,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   <Text style={styles.statValue}>
                     {familyMembers.reduce((sum, m) => sum + m.xp, 0)}
                   </Text>
-                  <Text style={styles.statLabel}>Toplam Altın</Text>
+                  <Text style={styles.statLabel}>{i18n.t('parent.totalGold')}</Text>
                 </BlurView>
                 <BlurView intensity={15} tint="light" style={styles.statCard}>
                   <View style={[styles.statIconBox, { backgroundColor: '#818cf820' }]}>
@@ -425,20 +433,20 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   <Text style={styles.statValue}>
                     {Math.ceil(quests.filter(q => q.status === 'completed').length / 7 * 100)}%
                   </Text>
-                  <Text style={styles.statLabel}>Başarı Oranı</Text>
+                  <Text style={styles.statLabel}>{i18n.t('parent.successRate')}</Text>
                 </BlurView>
               </View>
 
               {/* Quest Templates */}
               <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-                <Text style={styles.sectionTitle}>Hızlı Görev Şablonları</Text>
+                <Text style={styles.sectionTitle}>{i18n.t('parent.quickTemplates')}</Text>
               </View>
               <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 16, paddingHorizontal: 0 }}>
-                Bir şablona tıklayarak hızlıca görev ekleyin
+                {i18n.t('parent.templateTip')}
               </Text>
 
               <View style={styles.templatesGrid}>
-                {QUEST_TEMPLATES.map((template, idx) => (
+                {getQuestTemplates().map((template, idx) => (
                   <TouchableOpacity
                     key={idx}
                     style={styles.templateCard}
@@ -449,7 +457,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                         category: template.category as any,
                         type: 'daily'
                       });
-                      Alert.alert('✅ Görev Eklendi', `"${template.title}" görevi oluşturuldu!`);
+                      Alert.alert(i18n.t('parent.questAdded'), `"${template.title}"`);
                     }}
                   >
                     <Text style={{ fontSize: 24, marginBottom: 8 }}>{template.icon}</Text>
@@ -463,7 +471,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
               {/* Routine Quick Actions */}
               <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-                <Text style={styles.sectionTitle}>Rutin Yönetimi</Text>
+                <Text style={styles.sectionTitle}>{i18n.t('parent.routineManagement')}</Text>
               </View>
               <BlurView intensity={15} tint="light" style={styles.routineInfoCard}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -471,9 +479,9 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     <ClipboardList size={20} color="#a855f7" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: '#fff', fontWeight: 'bold', marginBottom: 4 }}>Günlük Rutinler</Text>
+                    <Text style={{ color: '#fff', fontWeight: 'bold', marginBottom: 4 }}>{i18n.t('parent.dailyRoutines')}</Text>
                     <Text style={{ color: '#94a3b8', fontSize: 12 }}>
-                      {quests.filter(q => q.type === 'routine').length} aktif rutin
+                      {quests.filter(q => q.type === 'routine').length} {i18n.t('parent.activeRoutines')}
                     </Text>
                   </View>
                   <TouchableOpacity
@@ -483,7 +491,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       setIsAdding(true);
                     }}
                   >
-                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>+ Rutin Ekle</Text>
+                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>{i18n.t('parent.addRoutine')}</Text>
                   </TouchableOpacity>
                 </View>
               </BlurView>
@@ -498,10 +506,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         isAddingReward && (
           <View style={styles.modalOverlay}>
             <BlurView intensity={50} tint="dark" style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Yeni Ödül Ekle</Text>
+              <Text style={styles.modalTitle}>{i18n.t('parent.newReward')}</Text>
 
               <View style={{ marginBottom: 24 }}>
-                <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: 'bold', marginBottom: 12, marginLeft: 4 }}>İKON SEÇ</Text>
+                <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: 'bold', marginBottom: 12, marginLeft: 4 }}>{i18n.t('parent.selectIcon')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
                   {ICON_OPTIONS.map(icon => (
                     <TouchableOpacity
@@ -522,14 +530,14 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
               <TextInput
                 style={styles.input}
-                placeholder="Ödül Adı (Örn: 30 Dk Tablet)"
+                placeholder={i18n.t('parent.rewardName')}
                 placeholderTextColor="#94a3b8"
                 value={newRewardTitle}
                 onChangeText={setNewRewardTitle}
               />
               <TextInput
                 style={styles.input}
-                placeholder="Fiyat (Altın)"
+                placeholder={i18n.t('parent.price')}
                 placeholderTextColor="#94a3b8"
                 value={newRewardCost}
                 onChangeText={setNewRewardCost}
@@ -537,10 +545,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               />
               <View style={styles.modalButtons}>
                 <TouchableOpacity onPress={() => setIsAddingReward(false)} style={styles.modalCancel}>
-                  <Text style={styles.modalCancelText}>İPTAL</Text>
+                  <Text style={styles.modalCancelText}>{i18n.t('parent.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleAddRewardSubmit} style={styles.modalPublish}>
-                  <Text style={styles.modalPublishText}>EKLE</Text>
+                  <Text style={styles.modalPublishText}>{i18n.t('parent.add')}</Text>
                 </TouchableOpacity>
               </View>
             </BlurView>
@@ -548,80 +556,77 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         )
       }
 
-      {/* Bonus Gold Modal */}
-      {
-        showBonusModal && selectedChild && (
-          <View style={styles.modalOverlay}>
-            <BlurView intensity={50} tint="dark" style={styles.modalContent}>
-              <Text style={styles.modalTitle}>🎁 Bonus Altın Ver</Text>
+      {showBonusModal && selectedChild && (
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={50} tint="dark" style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{i18n.t('parent.bonusGold')}</Text>
 
-              {/* Child Selector */}
-              <View style={{ marginBottom: 20 }}>
-                <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: 'bold', marginBottom: 12, marginLeft: 4 }}>ÇOCUK SEÇ</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-                  {familyMembers.map(child => (
-                    <TouchableOpacity
-                      key={child.id}
-                      onPress={() => setSelectedChild(child)}
-                      style={{
-                        paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16,
-                        backgroundColor: selectedChild?.id === child.id ? '#10b981' : 'rgba(255,255,255,0.1)',
-                        borderWidth: 2, borderColor: selectedChild?.id === child.id ? '#10b981' : 'transparent',
-                        flexDirection: 'row', alignItems: 'center', gap: 8
-                      }}
-                    >
-                      <Text style={{ fontSize: 18 }}>
-                        {child.avatar && !child.avatar.startsWith('http') ? getAvatarEmoji(child.avatar) : '👤'}
-                      </Text>
-                      <Text style={{ color: '#fff', fontWeight: 'bold' }}>{child.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
+            {/* Child Selector */}
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: 'bold', marginBottom: 12, marginLeft: 4 }}>{i18n.t('parent.selectChild')}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                {familyMembers.map(child => (
+                  <TouchableOpacity
+                    key={child.id}
+                    onPress={() => setSelectedChild(child)}
+                    style={{
+                      paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16,
+                      backgroundColor: selectedChild?.id === child.id ? '#10b981' : 'rgba(255,255,255,0.1)',
+                      borderWidth: 2, borderColor: selectedChild?.id === child.id ? '#10b981' : 'transparent',
+                      flexDirection: 'row', alignItems: 'center', gap: 8
+                    }}
+                  >
+                    <Text style={{ fontSize: 18 }}>
+                      {child.avatar && !child.avatar.startsWith('http') ? getAvatarEmoji(child.avatar) : '👤'}
+                    </Text>
+                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>{child.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
 
-              {/* Amount Input */}
-              <View style={{ marginBottom: 16 }}>
-                <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: 'bold', marginBottom: 8, marginLeft: 4 }}>ALTIN MİKTARI</Text>
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  {['10', '25', '50', '100'].map(amount => (
-                    <TouchableOpacity
-                      key={amount}
-                      onPress={() => setBonusAmount(amount)}
-                      style={{
-                        flex: 1, paddingVertical: 12, borderRadius: 12,
-                        backgroundColor: bonusAmount === amount ? '#fbbf24' : 'rgba(255,255,255,0.1)',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <Text style={{ color: bonusAmount === amount ? '#000' : '#fff', fontWeight: 'bold' }}>{amount}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+            {/* Amount Input */}
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: 'bold', marginBottom: 8, marginLeft: 4 }}>{i18n.t('parent.goldAmount')}</Text>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                {['10', '25', '50', '100'].map(amount => (
+                  <TouchableOpacity
+                    key={amount}
+                    onPress={() => setBonusAmount(amount)}
+                    style={{
+                      flex: 1, paddingVertical: 12, borderRadius: 12,
+                      backgroundColor: bonusAmount === amount ? '#fbbf24' : 'rgba(255,255,255,0.1)',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <Text style={{ color: bonusAmount === amount ? '#000' : '#fff', fontWeight: 'bold' }}>{amount}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
+            </View>
 
-              <View style={styles.modalButtons}>
-                <TouchableOpacity onPress={() => setShowBonusModal(false)} style={styles.modalCancel}>
-                  <Text style={styles.modalCancelText}>İPTAL</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={async () => {
-                    if (!selectedChild) return;
-                    // Update child's XP via onSendBlessing (reusing existing logic)
-                    onSendBlessing('dad');
-                    Alert.alert(
-                      '🎉 Bonus Gönderildi!',
-                      `${selectedChild.name} için +${bonusAmount} Altın eklendi!`
-                    );
-                    setShowBonusModal(false);
-                  }}
-                  style={[styles.modalPublish, { backgroundColor: '#10b981' }]}
-                >
-                  <Text style={styles.modalPublishText}>GÖNDER 🪙</Text>
-                </TouchableOpacity>
-              </View>
-            </BlurView>
-          </View>
-        )
+            <View style={styles.modalButtons}>
+              <TouchableOpacity onPress={() => setShowBonusModal(false)} style={styles.modalCancel}>
+                <Text style={styles.modalCancelText}>{i18n.t('parent.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={async () => {
+                  if (!selectedChild) return;
+                  onSendBlessing('dad');
+                  Alert.alert(
+                    i18n.t('parent.bonusSent'),
+                    `${i18n.t('parent.goldAdded')} ${selectedChild.name}! +${bonusAmount}`
+                  );
+                  setShowBonusModal(false);
+                }}
+                style={[styles.modalPublish, { backgroundColor: '#10b981' }]}
+              >
+                <Text style={styles.modalPublishText}>{i18n.t('parent.send')}</Text>
+              </TouchableOpacity>
+            </View>
+          </BlurView>
+        </View>
+      )
       }
 
 
@@ -630,10 +635,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         isAdding && (
           <View style={styles.modalOverlay}>
             <BlurView intensity={50} tint="dark" style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Yeni Görev Emri</Text>
+              <Text style={styles.modalTitle}>{i18n.t('parent.newQuestOrder')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Görev Başlığı"
+                placeholder={i18n.t('parent.questTitle')}
                 placeholderTextColor="#94a3b8"
                 value={newQuestTitle}
                 onChangeText={setNewQuestTitle}
@@ -645,11 +650,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 <View style={[styles.checkbox, isRoutine && styles.checkboxActive]}>
                   {isRoutine && <Check size={14} color="#000" />}
                 </View>
-                <Text style={styles.routineLabel}>Bu bir Günlük Rutin</Text>
+                <Text style={styles.routineLabel}>{i18n.t('parent.dailyRoutine')}</Text>
               </TouchableOpacity>
               <View style={styles.modalButtons}>
                 <TouchableOpacity onPress={() => setIsAdding(false)} style={styles.modalCancel}>
-                  <Text style={styles.modalCancelText}>İPTAL</Text>
+                  <Text style={styles.modalCancelText}>{i18n.t('parent.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => {
                   if (!newQuestTitle) return;
@@ -663,7 +668,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   setIsRoutine(false);
                   setIsAdding(false);
                 }} style={styles.modalPublish}>
-                  <Text style={styles.modalPublishText}>YAYINLA</Text>
+                  <Text style={styles.modalPublishText}>{i18n.t('parent.publish')}</Text>
                 </TouchableOpacity>
               </View>
             </BlurView>
@@ -691,7 +696,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
           </TouchableOpacity>
 
           <TouchableOpacity onPress={onExit} style={styles.dockItem}>
-            <Settings size={24} color="#94a3b8" />
+            <Shield size={24} color="#60a5fa" />
           </TouchableOpacity>
         </BlurView>
       </View>

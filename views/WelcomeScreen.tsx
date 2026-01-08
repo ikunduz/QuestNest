@@ -1,16 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Image, TouchableOpacity, Dimensions, Modal, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Swords, Users, BookOpen, X, Smartphone, Zap, Crown, Sparkles } from 'lucide-react-native';
+import { Swords, Users, BookOpen, X, Smartphone, Zap, Crown, Sparkles, Globe } from 'lucide-react-native';
 
 import { StatusBar } from 'expo-status-bar';
 import { BlurView } from 'expo-blur';
+import i18n, { changeLanguage, getCurrentLanguage } from '../i18n';
 
 const { width, height } = Dimensions.get('window');
 
 export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     // State
     const [showHowToPlay, setShowHowToPlay] = useState(false);
+    const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
+
+    // Toggle language function
+    const toggleLanguage = async () => {
+        const newLang = currentLang === 'tr' ? 'en' : 'tr';
+        await changeLanguage(newLang as 'en' | 'tr');
+        setCurrentLang(newLang);
+    };
 
     // Animations
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -52,6 +61,12 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             />
 
             <View style={styles.content}>
+                {/* Language Toggle - Top Right */}
+                <TouchableOpacity style={styles.langToggle} onPress={toggleLanguage}>
+                    <Globe size={18} color="#fbbf24" />
+                    <Text style={styles.langText}>{currentLang.toUpperCase()}</Text>
+                </TouchableOpacity>
+
                 <Animated.View style={[styles.heroContainer, { opacity: fadeAnim, transform: [{ scale: itemsScale }] }]}>
                     <View style={styles.heroGlow} />
                     <Image
@@ -62,8 +77,8 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                 </Animated.View>
 
                 <Animated.View style={[styles.textContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-                    <Text style={styles.title}>QuestNest</Text>
-                    <Text style={styles.subtitle}>Kahraman Aile Görevleri</Text>
+                    <Text style={styles.title}>{i18n.t('app.name')}</Text>
+                    <Text style={styles.subtitle}>{i18n.t('app.subtitle')}</Text>
                 </Animated.View>
 
                 <Animated.View style={[styles.buttonContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
@@ -73,7 +88,7 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                         activeOpacity={0.8}
                     >
                         <Swords size={24} color="#231d0f" style={styles.buttonIcon} />
-                        <Text style={styles.primaryButtonText}>Aile Oluştur</Text>
+                        <Text style={styles.primaryButtonText}>{i18n.t('welcome.createFamily')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -82,7 +97,7 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                         activeOpacity={0.8}
                     >
                         <Users size={24} color="#fbbd23" style={styles.buttonIcon} />
-                        <Text style={styles.secondaryButtonText}>Mevcut Aileye Katıl</Text>
+                        <Text style={styles.secondaryButtonText}>{i18n.t('welcome.joinFamily')}</Text>
                     </TouchableOpacity>
                 </Animated.View>
 
@@ -90,7 +105,7 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                 <Animated.View style={[styles.footer, { opacity: fadeAnim }]}>
                     <TouchableOpacity style={styles.howToPlayButton} onPress={() => setShowHowToPlay(true)}>
                         <BookOpen size={16} color="#94a3b8" style={{ marginRight: 6 }} />
-                        <Text style={styles.howToPlayText}>Bu Macera Nasıl Çalışır?</Text>
+                        <Text style={styles.howToPlayText}>{i18n.t('welcome.howToPlay')}</Text>
                     </TouchableOpacity>
                 </Animated.View>
 
@@ -112,7 +127,7 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                                 <View style={styles.modalHeader}>
                                     <View style={styles.modalTitleRow}>
                                         <BookOpen color="#fbbd23" size={24} />
-                                        <Text style={styles.modalTitle}>KRALLIK REHBERİ</Text>
+                                        <Text style={styles.modalTitle}>{i18n.t('welcome.kingdomGuide')}</Text>
                                     </View>
                                     <TouchableOpacity onPress={() => setShowHowToPlay(false)} style={styles.closeButton}>
                                         <X color="#94a3b8" size={24} />
@@ -126,10 +141,9 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                                         <View style={styles.guideIconContainer}>
                                             <Crown color="#fbbd23" size={32} />
                                         </View>
-                                        <Text style={styles.guideTitle}>Burası Senin Krallığın! 🏰</Text>
+                                        <Text style={styles.guideTitle}>{i18n.t('welcome.guide.yourKingdom')}</Text>
                                         <Text style={styles.guideText}>
-                                            Ev işleri artık sıkıcı görevler değil, efsanevi maceralar!
-                                            Odanı toplamak bir "Karanlık Zindan Temizliği", diş fırçalamak ise "İnci Kalkan Bakımı" olabilir.
+                                            {i18n.t('welcome.guide.yourKingdomDesc')}
                                         </Text>
                                     </View>
 
@@ -138,12 +152,9 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                                         <View style={[styles.guideIconContainer, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
                                             <Smartphone color="#60a5fa" size={32} />
                                         </View>
-                                        <Text style={[styles.guideTitle, { color: '#60a5fa' }]}>Büyülü Bağlantı ✨</Text>
+                                        <Text style={[styles.guideTitle, { color: '#60a5fa' }]}>{i18n.t('welcome.guide.magicConnection')}</Text>
                                         <Text style={styles.guideText}>
-                                            Bir kişi "Aile Kodu" oluşturur, diğerleri bu kodla katılır!{'\n\n'}
-                                            👑 Ebeveynler: Kod + PIN ile katılır{'\n'}
-                                            🛡️ Çocuklar: Kod + İsim ile katılır{'\n\n'}
-                                            Anne, Baba ve tüm çocuklar farklı cihazlardan aynı krallığa bağlanabilir.
+                                            {i18n.t('welcome.guide.magicConnectionDesc')}
                                         </Text>
                                     </View>
 
@@ -152,10 +163,9 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                                         <View style={[styles.guideIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
                                             <Zap color="#34d399" size={32} />
                                         </View>
-                                        <Text style={[styles.guideTitle, { color: '#34d399' }]}>Şimşek Hızı! ⚡</Text>
+                                        <Text style={[styles.guideTitle, { color: '#34d399' }]}>{i18n.t('welcome.guide.lightningSpeed')}</Text>
                                         <Text style={styles.guideText}>
-                                            Kraliçe (Anne) bir görev verdiğinde, Küçük Kahramanın (Senin) ekranına anında düşer!
-                                            Görevi tamamlayıp "Onaya Gönder" dediğinde, ebeveynlerine bildirim gider.
+                                            {i18n.t('welcome.guide.lightningSpeedDesc')}
                                         </Text>
                                     </View>
 
@@ -164,17 +174,16 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                                         <View style={[styles.guideIconContainer, { backgroundColor: 'rgba(236, 72, 153, 0.1)' }]}>
                                             <Sparkles color="#f472b6" size={32} />
                                         </View>
-                                        <Text style={[styles.guideTitle, { color: '#f472b6' }]}>Kahramanlar ve Yöneticiler</Text>
+                                        <Text style={[styles.guideTitle, { color: '#f472b6' }]}>{i18n.t('welcome.guide.heroesAndManagers')}</Text>
                                         <Text style={styles.guideText}>
-                                            • Ebeveynler: Görev verir, ödülleri onaylar ve altını yönetir.
-                                            {'\n'}• Çocuklar: Maceralara atılır, altın kazanır ve seviye atlar!
+                                            {i18n.t('welcome.guide.heroesAndManagersDesc')}
                                         </Text>
                                     </View>
 
                                 </ScrollView>
 
                                 <TouchableOpacity style={styles.modalButton} onPress={() => setShowHowToPlay(false)}>
-                                    <Text style={styles.modalButtonText}>ANLAŞILDI!</Text>
+                                    <Text style={styles.modalButtonText}>{i18n.t('welcome.understood')}</Text>
                                 </TouchableOpacity>
                             </LinearGradient>
                         </View>
@@ -194,6 +203,26 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingTop: 48,
         paddingBottom: 16,
+    },
+    langToggle: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(251, 191, 36, 0.3)',
+        gap: 6,
+        zIndex: 100,
+    },
+    langText: {
+        color: '#fbbf24',
+        fontSize: 12,
+        fontWeight: 'bold',
     },
     heroContainer: {
         width: width * 0.8,

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Shield, Delete } from 'lucide-react-native';
+import i18n from '../i18n';
 
 interface PinEntryScreenProps {
     onSuccess: () => void;
@@ -20,7 +21,7 @@ export const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess, onCan
                 if (newPin === correctPin) {
                     onSuccess();
                 } else {
-                    Alert.alert("Hatalı PIN", "Girdiğiniz PIN kodu yanlış.");
+                    Alert.alert(i18n.t('pin.wrongPin'), i18n.t('pin.tryAgain'));
                     setPin('');
                 }
             }
@@ -35,8 +36,8 @@ export const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess, onCan
         <View style={styles.container}>
             <View style={styles.header}>
                 <Shield size={48} color="#fbbf24" />
-                <Text style={styles.title}>EBEVEYN DENETİMİ</Text>
-                <Text style={styles.subtitle}>Devam etmek için 4 haneli PIN girin</Text>
+                <Text style={styles.title}>{i18n.t('pin.title')}</Text>
+                <Text style={styles.subtitle}>{i18n.t('pin.subtitle')}</Text>
             </View>
 
             <View style={styles.dotsContainer}>
@@ -59,7 +60,7 @@ export const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess, onCan
                     </TouchableOpacity>
                 ))}
                 <TouchableOpacity style={styles.key} onPress={onCancel}>
-                    <Text style={[styles.keyText, { color: '#f43f5e', fontSize: 14 }]}>İPTAL</Text>
+                    <Text style={[styles.keyText, { color: '#f43f5e', fontSize: 14 }]}>{i18n.t('pin.cancel').toUpperCase()}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.key} onPress={() => handlePress('0')}>
                     <Text style={styles.keyText}>0</Text>

@@ -11,24 +11,11 @@ import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../services/supabaseClient';
 import { decode } from 'base64-arraybuffer';
+import i18n from '../i18n';
 
 const { width } = Dimensions.get('window');
 
-// Mock Messages for UI Demo (kept as fallback or intro)
-const MOCK_MESSAGES = [
-    {
-        id: 'mock-1',
-        sender: 'High Queen (Mom)',
-        role: 'parent',
-        roleLabel: 'Kraliçe',
-        avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAm_tpa_vT5F_a5JMBM2LLfuJYpF64jiEIBDjmBQRybkz3hX_qp5o1vpttnzR-0J4hRJR4YCdLYSo1IYUsEIq1Ct6cY9Pio4fEygWfly7oogWnRia9qWpLNfy7bT8kLYVTAK6TdDS5IyrIte5E6Z54VPnO0JxD4_UG2muI7yAjG5D-92zNF598t5NfG6QbhiLguUG3-9x34Ffio-fjGQpHBPgJ-eOnhJt_2GRaP0zl8806pgmd1TJPFTEHVHAqJJQFhevt5_ht',
-        content: 'Gün batımından önce mutfak zindanı temizlenmeli. Yağ cinlerinden sakın!',
-        timestamp: '10:42 AM',
-        rewards: { xp: 50 },
-        verified: true,
-        type: 'text' as const
-    }
-];
+
 
 interface FamilyNotesScreenProps {
     familyId: string;
@@ -97,7 +84,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
         duration?: string;
     }
 
-    const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES as Message[]);
+    const [messages, setMessages] = useState<Message[]>([]);
 
     // 1. Quota Check (Max 30 Messages)
     const checkQuota = async () => {
@@ -113,8 +100,8 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
 
         if (count && count >= 30) {
             Alert.alert(
-                "Posta Kutusu Dolu! 📬",
-                "Ücretsiz büyü hakkınız doldu! (Max 30 mesaj). Yeni mesaj göndermek için eskileri silmelisiniz."
+                `📬 ${i18n.t('notes.mailboxFull')}`,
+                i18n.t('notes.freeSpellLimit')
             );
             return false;
         }
@@ -208,7 +195,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                     verified: false, // Default
                     rewards: row.rewards
                 }));
-                setMessages([...MOCK_MESSAGES, ...loadedMessages]);
+                setMessages(loadedMessages);
                 setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: false }), 200);
             }
         };
@@ -414,25 +401,20 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
 
     // Delete Message Feature
     const handleDeleteMessage = (msg: Message) => {
-        // Prevent deleting mock messages
-        if (msg.id.startsWith('mock')) return;
 
         Alert.alert(
-            "Mesajı Sil",
-            "Bu mesajı kara delikten sonsuza dek yok etmek istiyor musun?",
+            i18n.t('notes.deleteMessage'),
+            i18n.t('notes.deleteMessageConfirm'),
             [
-                { text: "Vazgeç", style: 'cancel' },
+                { text: i18n.t('notes.no'), style: 'cancel' },
                 {
-                    text: "Evet, Yok Et!",
+                    text: i18n.t('notes.yesDestroy'),
                     style: 'destructive',
                     onPress: async () => {
-                        // 1. Delete Media File if exists
                         if ((msg.type === 'image' || msg.type === 'audio') && (msg.media_url || msg.image || msg.audio)) {
                             const url = msg.media_url || msg.image || msg.audio;
                             if (url) {
                                 try {
-                                    // Extract filename from URL (assumes standard Supabase URL structure)
-                                    // URL format: .../chat-media/actual_filename.jpg
                                     const fileName = url.split('/').pop();
                                     if (fileName) {
                                         const { error: storageError } = await supabase.storage
@@ -448,16 +430,14 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                             }
                         }
 
-                        // 2. Delete Database Row
                         const { error } = await supabase
                             .from('messages')
                             .delete()
                             .eq('id', msg.id);
 
                         if (error) {
-                            Alert.alert("Hata", "Mesaj silinemedi.");
+                            Alert.alert(i18n.t('notes.error'), i18n.t('notes.messageDeleteFailed'));
                         } else {
-                            // Optimistic Update: Remove locally immediately
                             setMessages(prev => prev.filter(m => m.id !== msg.id));
                         }
                     }
@@ -469,18 +449,16 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
     // Clear Entire Chat Feature
     const handleClearChat = () => {
         Alert.alert(
-            "Sohbeti Temizle",
-            "Tüm mesajlar ve dosyalar kalıcı olarak silinecek. Emin misin?",
+            i18n.t('notes.clearChat'),
+            i18n.t('notes.clearChatConfirm'),
             [
-                { text: "Vazgeç", style: 'cancel' },
+                { text: i18n.t('notes.no'), style: 'cancel' },
                 {
-                    text: "Evet, Hepsini Sil",
+                    text: i18n.t('notes.yesClearAll'),
                     style: 'destructive',
                     onPress: async () => {
-                        // Optimistic Update
-                        setMessages((prev) => prev.filter(m => m.id.startsWith('mock'))); // Keep mock msg
+                        setMessages([]);
 
-                        // 1. Fetch all messages with media to delete files
                         const { data: mediaMessages } = await supabase
                             .from('messages')
                             .select('media_url, type')
@@ -506,14 +484,12 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                             }
                         }
 
-                        // 2. Delete All Rows
                         const { error } = await supabase
                             .from('messages')
                             .delete()
                             .eq('family_id', familyId);
 
-                        if (error) Alert.alert("Hata", "Sohbet temizlenemedi.");
-                        // Realtime subscription will sync eventual consistency
+                        if (error) Alert.alert(i18n.t('notes.error'), i18n.t('notes.chatClearFailed'));
                     }
                 }
             ]
@@ -536,9 +512,9 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                 <View style={styles.headerTitleContainer}>
                     <View style={styles.headerTitleRow}>
                         <History color="#fbbd23" size={20} />
-                        <Text style={styles.headerTitle}>Aile Konseyi</Text>
+                        <Text style={styles.headerTitle}>{i18n.t('notes.title')}</Text>
                     </View>
-                    <Text style={styles.headerSub}>{messages.length >= 30 ? "Posta Kutusu Dolu!" : "Görev devam ediyor..."}</Text>
+                    <Text style={styles.headerSub}>{messages.length >= 30 ? i18n.t('notes.mailboxFull') : i18n.t('notes.missionContinues')}</Text>
                 </View>
                 <TouchableOpacity style={styles.iconButton} onPress={handleClearChat}>
                     <MoreVertical color="rgba(255,255,255,0.7)" size={24} />
@@ -549,7 +525,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
             <View style={styles.infoBanner}>
                 <Clock size={14} color="#9ca3af" />
                 <Text style={styles.infoBannerText}>
-                    Mesajlar 3 gün sonra otomatik silinir
+                    {i18n.t('notes.autoDeleteInfo')}
                 </Text>
             </View>
 
@@ -564,14 +540,14 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                     <View style={styles.cleanupNotice}>
                         <Info size={12} color="#60a5fa" />
                         <Text style={styles.cleanupNoticeText}>
-                            {cleanedCount} eski mesaj otomatik temizlendi
+                            {cleanedCount} {i18n.t('notes.oldMessagesCleared')}
                         </Text>
                     </View>
                 )}
 
                 <View style={styles.dateDividerContainer}>
                     <View style={styles.dateDivider}>
-                        <Text style={styles.dateText}>BUGÜN</Text>
+                        <Text style={styles.dateText}>{i18n.t('notes.today')}</Text>
                     </View>
                 </View>
 
@@ -691,7 +667,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                 <View style={styles.actionChips}>
                     <TouchableOpacity style={styles.actionChipPrimary} onPress={handleCamera}>
                         <Camera size={14} color="#fbbd23" />
-                        <Text style={styles.actionChipTextPrimary}>Kanıt Yakala</Text>
+                        <Text style={styles.actionChipTextPrimary}>{i18n.t('notes.captureEvidence')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -702,7 +678,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                         <Text style={[styles.actionChipText, isRecording && { color: '#f87171' }]}>
                             {isRecording
                                 ? `${formatDuration(recordingDuration)} / 0:05`
-                                : "Sesli Mesaj (5sn)"}
+                                : i18n.t('notes.voiceMessage')}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -715,7 +691,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                         </TouchableOpacity>
                         <TextInput
                             style={styles.textInput}
-                            placeholder={messages.length >= 30 ? "Kutu Dolu! Mesaj silin." : "Mesajınızı yazın..."}
+                            placeholder={messages.length >= 30 ? i18n.t('notes.mailboxFullType') : i18n.t('notes.typeMessage')}
                             placeholderTextColor="rgba(255,255,255,0.3)"
                             value={newMessage}
                             onChangeText={setNewMessage}

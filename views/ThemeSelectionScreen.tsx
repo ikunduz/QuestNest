@@ -3,22 +3,23 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { ArrowLeft, CheckCircle, Lock, Music, Volume2, Bell, ChevronRight, Check } from 'lucide-react-native';
+import i18n from '../i18n';
 
 const { width } = Dimensions.get('window');
 
 // Mock Data for Themes based on HTML
-const REALMS = [
+const getRealms = () => [
     {
         id: 'cyberpunk',
-        name: 'Cyberpunk Şehir',
+        name: i18n.t('realms.cyberpunkCity'),
         image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB5lZbTZ62TLIHdG7jcirftmX5m98TkiGMjTO_t68MOZGBbsA1HO36agMSO0xyqWNXS-vJUA6eOclkc18fSC0v5FIzOPxGlNN4tsQwj8JqzUWwwReyEUcaekbht6hx8p_8NjKBlrUm5flHzEKf4WAGmo671e8wop0ul1O7EJxJq7DfPN_5Ssw8pEEx5OtSFbg3DR_4-nfzyqoSuOGPuhCixTg9PzeBQ8F4z4Pxr8QeOq-qy0l4fzT1EJk72qFWscqyaXukXZ3Or',
         locked: true,
         accent: '#22d3ee' // cyan-400
     },
     {
         id: 'medieval',
-        name: 'Ortаçağ Krallığı',
-        subtext: 'Standart Dünya',
+        name: i18n.t('realms.medievalKingdom'),
+        subtext: i18n.t('realms.standardWorld'),
         image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrpaooWu-kvky21Y4Q9WW-ucCgZWwgV1L1xYJrB0lnWYl2VTqZ3C1ZsDlkDaVtaGEcElYQFT-VIXtUlFk6vZ_-c5bHSrwax3oJFewtelME7S0qc_cILMdVg_wFB3-yzBLuclyaig3B1blVq-E6hV0rMQ_vY49wIbH5HnfWKelSpKbEhoF8HZPSpPVRhVPyxOagazuytNOvmljlaEVN8iZg6p95h_dJsBlpDIl5Q6xDcocCoFKgprg8mrPjANyvSCW5NLPWKYpv',
         locked: false,
         active: true,
@@ -26,7 +27,7 @@ const REALMS = [
     },
     {
         id: 'space',
-        name: 'Uzay Kaşifi',
+        name: i18n.t('realms.spaceExplorer'),
         image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCS5Xev2N3AJBm4YpvQlLAcAcJOenv3DPwapftT7e4OpZ8o1BrwJdTvpifJf4EEjInHY_XKYkTbmYnSTqYWjvx8RVIAoehZy_w6G9UHvoPSbP_uaj9q2seYqiNx4a4abAOaY-cEpPLJX2NkdKBQj_NiYPmwf0_-RHnoe_KBczc6nShno681yuaFSob7R_Yd9Dg7KGIoz0OP7eG1DT0a4u_59G-4OAi2vdMxsyTafIP5ByherRJ__45U76ZPIZI1ZYIsSuObYqmK',
         locked: true,
         accent: '#c084fc' // purple-400
@@ -101,7 +102,7 @@ export const ThemeSelectionScreen: React.FC<ThemeSelectionScreenProps> = ({ onBa
                 <TouchableOpacity onPress={onBack} style={styles.backBtn}>
                     <ArrowLeft size={20} color="#fff" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>DÜNYA SEÇ</Text>
+                <Text style={styles.headerTitle}>{i18n.t('realms.worldSelect')}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -109,8 +110,8 @@ export const ThemeSelectionScreen: React.FC<ThemeSelectionScreenProps> = ({ onBa
                 {/* Headline */}
                 <View style={styles.headlineContainer}>
                     <Text style={styles.headlineText}>
-                        Senin{'\n'}
-                        <Text style={{ color: '#fbbd23' }}>Dünyanı Seç</Text>
+                        {i18n.t('realms.chooseYourWorld')}{'\n'}
+                        <Text style={{ color: '#fbbd23' }}>{i18n.t('realms.world')}</Text>
                     </Text>
                 </View>
 
@@ -121,7 +122,7 @@ export const ThemeSelectionScreen: React.FC<ThemeSelectionScreenProps> = ({ onBa
                     <LinearGradient colors={['transparent', '#231d0f']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.fadeRight} pointerEvents="none" />
 
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselContent} snapToInterval={260 + 24} decelerationRate="fast">
-                        {REALMS.map((realm) => {
+                        {getRealms().map((realm: any) => {
                             const isSelected = selectedTheme === realm.id;
                             const isLocked = realm.locked && realm.id !== 'medieval'; // Quick fix to ensure at least one is unlocked as per html active state
 
@@ -136,7 +137,7 @@ export const ThemeSelectionScreen: React.FC<ThemeSelectionScreenProps> = ({ onBa
                                         <View style={styles.activeBadgeContainer}>
                                             <View style={styles.activeBadge}>
                                                 <Check size={14} color="#231d0f" strokeWidth={3} />
-                                                <Text style={styles.activeBadgeText}>AKTİF</Text>
+                                                <Text style={styles.activeBadgeText}>{i18n.t('realms.active')}</Text>
                                             </View>
                                         </View>
                                     )}
@@ -151,7 +152,7 @@ export const ThemeSelectionScreen: React.FC<ThemeSelectionScreenProps> = ({ onBa
                                             {isLocked ? (
                                                 <View style={styles.lockedTag}>
                                                     <Lock size={14} color={realm.accent} />
-                                                    <Text style={[styles.lockedText, { color: realm.accent }]}>KİLİTLİ</Text>
+                                                    <Text style={[styles.lockedText, { color: realm.accent }]}>{i18n.t('realms.locked')}</Text>
                                                 </View>
                                             ) : (
                                                 <Text style={styles.cardSubtext}>{realm.subtext}</Text>
@@ -168,7 +169,7 @@ export const ThemeSelectionScreen: React.FC<ThemeSelectionScreenProps> = ({ onBa
 
                 {/* Settings Section */}
                 <View style={styles.settingsSection}>
-                    <Text style={styles.sectionTitle}>DUYUSAL AYARLAR</Text>
+                    <Text style={styles.sectionTitle}>{i18n.t('realms.sensorySettings')}</Text>
 
                     <BlurView intensity={20} tint="light" style={styles.settingsPanel}>
                         {/* Music */}
@@ -178,8 +179,8 @@ export const ThemeSelectionScreen: React.FC<ThemeSelectionScreenProps> = ({ onBa
                                     <Music size={20} color="#fbbd23" />
                                 </View>
                                 <View>
-                                    <Text style={styles.settingLabel}>Arka Plan Müziği</Text>
-                                    <Text style={styles.settingSub}>Sürükleyici müzik</Text>
+                                    <Text style={styles.settingLabel}>{i18n.t('realms.backgroundMusic')}</Text>
+                                    <Text style={styles.settingSub}>{i18n.t('realms.immersiveMusic')}</Text>
                                 </View>
                             </View>
                             <CustomToggle value={settings.music} onValueChange={() => toggleSetting('music')} />
@@ -192,8 +193,8 @@ export const ThemeSelectionScreen: React.FC<ThemeSelectionScreenProps> = ({ onBa
                                     <Volume2 size={20} color="#fbbd23" />
                                 </View>
                                 <View>
-                                    <Text style={styles.settingLabel}>Ses Efektleri</Text>
-                                    <Text style={styles.settingSub}>Buton sesleri ve büyüler</Text>
+                                    <Text style={styles.settingLabel}>{i18n.t('realms.soundEffects')}</Text>
+                                    <Text style={styles.settingSub}>{i18n.t('realms.buttonSounds')}</Text>
                                 </View>
                             </View>
                             <CustomToggle value={settings.soundFx} onValueChange={() => toggleSetting('soundFx')} />
@@ -206,8 +207,8 @@ export const ThemeSelectionScreen: React.FC<ThemeSelectionScreenProps> = ({ onBa
                                     <Bell size={20} color="rgba(255,255,255,0.4)" />
                                 </View>
                                 <View>
-                                    <Text style={[styles.settingLabel, { color: 'rgba(255,255,255,0.6)' }]}>Görev Uyarıları</Text>
-                                    <Text style={[styles.settingSub, { color: 'rgba(255,255,255,0.3)' }]}>Günlük hatırlatmalar</Text>
+                                    <Text style={[styles.settingLabel, { color: 'rgba(255,255,255,0.6)' }]}>{i18n.t('realms.questAlerts')}</Text>
+                                    <Text style={[styles.settingSub, { color: 'rgba(255,255,255,0.3)' }]}>{i18n.t('realms.dailyReminders')}</Text>
                                 </View>
                             </View>
                             <CustomToggle value={settings.notifications} onValueChange={() => toggleSetting('notifications')} />
@@ -218,7 +219,7 @@ export const ThemeSelectionScreen: React.FC<ThemeSelectionScreenProps> = ({ onBa
                 {/* Bottom Action */}
                 <View style={styles.actionContainer}>
                     <TouchableOpacity style={styles.enterBtn} onPress={() => onThemeSelected && onThemeSelected(selectedTheme)}>
-                        <Text style={styles.enterBtnText}>Dünyaya Gir</Text>
+                        <Text style={styles.enterBtnText}>{i18n.t('realms.enterWorld')}</Text>
                         <ChevronRight size={24} color="#231d0f" strokeWidth={3} />
                     </TouchableOpacity>
                 </View>

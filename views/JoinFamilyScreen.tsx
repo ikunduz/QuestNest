@@ -5,6 +5,7 @@ import { GameButton } from '../components/GameButton';
 import { Search, Users, Sparkles, Key, Shield, Crown } from 'lucide-react-native';
 import { findFamilyByCode, createUser } from '../services/familyService';
 import { supabase } from '../services/supabaseClient';
+import i18n from '../i18n';
 
 type JoinStep = 'code' | 'found' | 'select_role' | 'parent_pin' | 'child_name';
 
@@ -45,7 +46,7 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
 
     const handleSearch = async () => {
         if (code.length < 4) {
-            Alert.alert("🔑", "Geçerli bir aile kodu gir!");
+            Alert.alert("🔑", i18n.t('auth.enterValidCode'));
             return;
         }
 
@@ -55,7 +56,6 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
             if (family) {
                 setFoundFamily(family);
 
-                // Get family PIN from parent user
                 const { data: parentUser } = await supabase
                     .from('users')
                     .select('pin_hash')
@@ -70,10 +70,10 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
 
                 setStep('select_role');
             } else {
-                Alert.alert("😕", "Bu kodla eşleşen bir krallık bulunamadı.");
+                Alert.alert("😕", i18n.t('auth.noKingdomFound'));
             }
         } catch (e) {
-            Alert.alert("Hata", "Arama sırasında bir sorun oluştu.");
+            Alert.alert(i18n.t('common.error'), i18n.t('auth.errorSearching'));
         } finally {
             setLoading(false);
         }
@@ -82,7 +82,7 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
     const handleSelectRole = (role: 'parent' | 'child') => {
         if (role === 'parent') {
             if (!familyPin) {
-                Alert.alert("Hata", "Bu ailede kayıtlı ebeveyn PIN'i bulunamadı.");
+                Alert.alert(i18n.t('common.error'), i18n.t('auth.noParentPin'));
                 return;
             }
             setStep('parent_pin');
@@ -93,17 +93,16 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
 
     const handleVerifyPin = () => {
         if (pin !== familyPin) {
-            Alert.alert("❌", "PIN yanlış! Sadece ebeveynler bu PIN'i biliyor.");
+            Alert.alert("❌", i18n.t('auth.wrongPinOnly'));
             setPin('');
             return;
         }
-        // PIN correct, ask for name
-        setStep('child_name'); // Reusing child_name step for parent name too
+        setStep('child_name');
     };
 
     const handleJoinAsParent = async () => {
         if (!userName.trim()) {
-            Alert.alert("👤", "Lütfen adını gir!");
+            Alert.alert("👤", i18n.t('auth.pleaseEnterName'));
             return;
         }
 
@@ -113,7 +112,7 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
                 family_id: foundFamily.id,
                 name: userName.trim(),
                 role: 'parent',
-                parent_type: 'mom', // Default to mom for second parent
+                parent_type: 'mom',
                 pin_hash: familyPin
             });
 
@@ -132,13 +131,13 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
             await AsyncStorage.setItem('questnest_user', JSON.stringify(userState));
 
             Alert.alert(
-                "🎉 HOŞ GELDİN!",
-                `${foundFamily.name} krallığına ebeveyn olarak katıldın!`,
-                [{ text: "MACERAYA BAŞLA!", onPress: () => navigation.replace('Main', { initialUser: userState }) }]
+                `🎉 ${i18n.t('auth.welcomeBack')}`,
+                `${foundFamily.name} ${i18n.t('auth.joinedAsParent')}`,
+                [{ text: i18n.t('auth.startAdventure'), onPress: () => navigation.replace('Main', { initialUser: userState }) }]
             );
         } catch (error: any) {
             console.error(error);
-            Alert.alert("Hata", "Katılırken bir sorun oluştu.");
+            Alert.alert(i18n.t('common.error'), i18n.t('auth.errorJoining'));
         } finally {
             setLoading(false);
         }
@@ -146,7 +145,7 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
 
     const handleJoinAsChild = async () => {
         if (!userName.trim()) {
-            Alert.alert("👤", "Lütfen adını gir!");
+            Alert.alert("👤", i18n.t('auth.pleaseEnterName'));
             return;
         }
 
@@ -175,13 +174,13 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
             await AsyncStorage.setItem('questnest_user', JSON.stringify(userState));
 
             Alert.alert(
-                "🎉 HOŞ GELDİN KAHRAMAN!",
-                `${foundFamily.name} krallığına katıldın!`,
-                [{ text: "MACERAYA BAŞLA!", onPress: () => navigation.replace('Main', { initialUser: userState }) }]
+                `🎉 ${i18n.t('auth.welcomeHero')}`,
+                `${foundFamily.name} ${i18n.t('auth.joinedKingdom')}`,
+                [{ text: i18n.t('auth.startAdventure'), onPress: () => navigation.replace('Main', { initialUser: userState }) }]
             );
         } catch (error: any) {
             console.error(error);
-            Alert.alert("Hata", "Katılırken bir sorun oluştu.");
+            Alert.alert(i18n.t('common.error'), i18n.t('auth.errorJoining'));
         } finally {
             setLoading(false);
         }
@@ -210,7 +209,7 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
                 return (
                     <>
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>AİLE KODU</Text>
+                            <Text style={styles.label}>{i18n.t('auth.familyCode').toUpperCase()}</Text>
                             <TextInput
                                 style={styles.codeInput}
                                 value={code}
@@ -223,7 +222,7 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
                         </View>
                         <GameButton onPress={handleSearch} loading={loading} style={styles.actionBtn}>
                             <Search color="#0f172a" size={20} style={{ marginRight: 8 }} />
-                            <Text style={{ color: '#0f172a', fontWeight: 'bold' }}>KRALLIĞI BUL</Text>
+                            <Text style={{ color: '#0f172a', fontWeight: 'bold' }}>{i18n.t('auth.findKingdom')}</Text>
                         </GameButton>
                     </>
                 );
@@ -234,22 +233,22 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
                         <View style={styles.foundCard}>
                             <Users color="#22c55e" size={32} />
                             <Text style={styles.foundTitle}>{foundFamily?.name}</Text>
-                            <Text style={styles.foundSub}>Krallık bulundu! 🎉</Text>
+                            <Text style={styles.foundSub}>{i18n.t('auth.familyFound')} 🎉</Text>
                         </View>
 
-                        <Text style={styles.questionText}>Sen kimsin?</Text>
+                        <Text style={styles.questionText}>{i18n.t('auth.whoAreYou')}</Text>
 
                         <View style={styles.roleButtons}>
                             <TouchableOpacity style={styles.roleCard} onPress={() => handleSelectRole('parent')}>
                                 <Crown color="#fbbf24" size={40} />
-                                <Text style={styles.roleTitle}>EBEVEYNİM</Text>
-                                <Text style={styles.roleDesc}>Anne veya Baba</Text>
+                                <Text style={styles.roleTitle}>{i18n.t('auth.iAmParent')}</Text>
+                                <Text style={styles.roleDesc}>{i18n.t('auth.momOrDad')}</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity style={[styles.roleCard, styles.roleCardChild]} onPress={() => handleSelectRole('child')}>
                                 <Shield color="#818cf8" size={40} />
-                                <Text style={styles.roleTitle}>ÇOCUĞUM</Text>
-                                <Text style={styles.roleDesc}>Genç Kahraman</Text>
+                                <Text style={styles.roleTitle}>{i18n.t('auth.iAmChild')}</Text>
+                                <Text style={styles.roleDesc}>{i18n.t('auth.youngHero')}</Text>
                             </TouchableOpacity>
                         </View>
                     </>
@@ -260,12 +259,12 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
                     <>
                         <View style={styles.foundCard}>
                             <Key color="#fbbf24" size={32} />
-                            <Text style={styles.foundTitle}>Ebeveyn Doğrulama</Text>
-                            <Text style={styles.foundSub}>Ailenin PIN kodunu gir</Text>
+                            <Text style={styles.foundTitle}>{i18n.t('auth.parentVerification')}</Text>
+                            <Text style={styles.foundSub}>{i18n.t('auth.enterFamilyPin')}</Text>
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>4 HANELİ PIN</Text>
+                            <Text style={styles.label}>{i18n.t('auth.fourDigitPin')}</Text>
                             <TextInput
                                 style={styles.pinInput}
                                 value={pin}
@@ -280,7 +279,7 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
                         </View>
 
                         <GameButton onPress={handleVerifyPin} loading={loading} style={styles.actionBtn}>
-                            <Text style={{ color: '#0f172a', fontWeight: 'bold' }}>DOĞRULA</Text>
+                            <Text style={{ color: '#0f172a', fontWeight: 'bold' }}>{i18n.t('auth.verify')}</Text>
                         </GameButton>
                     </>
                 );
@@ -296,18 +295,18 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
                                 <Shield color="#818cf8" size={32} />
                             )}
                             <Text style={styles.foundTitle}>
-                                {isParentJoin ? 'Ebeveyn Kaydı' : 'Kahraman Kaydı'}
+                                {isParentJoin ? i18n.t('auth.parentRegistration') : i18n.t('auth.heroRegistration')}
                             </Text>
-                            <Text style={styles.foundSub}>{foundFamily?.name} ailesine katılıyorsun</Text>
+                            <Text style={styles.foundSub}>{foundFamily?.name} {i18n.t('auth.joiningFamily')}</Text>
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>{isParentJoin ? 'SENİN ADIN' : 'KAHRAMAN ADIN'}</Text>
+                            <Text style={styles.label}>{isParentJoin ? i18n.t('auth.yourNameLabel') : i18n.t('auth.heroNameLabel')}</Text>
                             <TextInput
                                 style={styles.input}
                                 value={userName}
                                 onChangeText={setUserName}
-                                placeholder={isParentJoin ? "Örn: Anne" : "Örn: Mehmet"}
+                                placeholder={isParentJoin ? i18n.t('auth.exampleMom') : i18n.t('auth.exampleName')}
                                 placeholderTextColor="#475569"
                                 autoFocus
                             />
@@ -319,7 +318,7 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
                             style={styles.actionBtn}
                         >
                             <Sparkles color="#0f172a" size={20} style={{ marginRight: 8 }} />
-                            <Text style={{ color: '#0f172a', fontWeight: 'bold' }}>KRALLIĞA KATIL!</Text>
+                            <Text style={{ color: '#0f172a', fontWeight: 'bold' }}>{i18n.t('auth.joinKingdomBtn')}</Text>
                         </GameButton>
                     </>
                 );
@@ -335,14 +334,14 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
                     <Key color="#fbbf24" size={48} />
                 </Animated.View>
 
-                <Text style={styles.title}>KRALLIĞA KATIL</Text>
-                <Text style={styles.subtitle}>Aile kodunu girerek mevcut bir krallığa katıl</Text>
+                <Text style={styles.title}>{i18n.t('auth.joinKingdom')}</Text>
+                <Text style={styles.subtitle}>{i18n.t('auth.enterCodeToJoin')}</Text>
 
                 {renderContent()}
 
                 {/* Back Button */}
                 <GameButton variant="ghost" onPress={handleBack} style={styles.backBtn}>
-                    ← GERİ
+                    {i18n.t('auth.back')}
                 </GameButton>
             </Animated.View>
         </Animated.View>

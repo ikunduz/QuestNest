@@ -1,15 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, Image, Animated, Dimensions, Easing, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, Users, Sword, ShoppingBag, LayoutDashboard, Settings, MessageCircle, PawPrint, Castle } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+// @ts-ignore - expo-splash-screen works at runtime but lacks type declarations
+import * as SplashScreen from 'expo-splash-screen';
 
 import { supabase } from './services/supabaseClient';
 import { subscribeToQuests, fetchQuests, updateQuestStatus, addQuest } from './services/questService';
 import { Role, Quest, UserState, Reward, PetState, ParentType } from './types';
-import { INITIAL_REWARDS } from './constants';
+import { getInitialRewards } from './constants';
+import i18n from './i18n';
+
+// Keep splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync().catch(() => { });
 
 // Screens
 import { WelcomeScreen } from './views/WelcomeScreen';
@@ -47,12 +54,12 @@ const MainApp = ({ route, navigation }: any) => {
   const [role, setRole] = useState<Role>(initialUser.role);
   const [activeTab, setActiveTab] = useState<TabType>('quests');
   const [quests, setQuests] = useState<Quest[]>([]);
-  const [rewards, setRewards] = useState<Reward[]>(INITIAL_REWARDS);
+  const [rewards, setRewards] = useState<Reward[]>(getInitialRewards());
   const [showPin, setShowPin] = useState(false);
   const [pet, setPet] = useState<PetState>({
     id: 'ignis-1',
     name: 'Ignis',
-    type: 'ATEŞ EJDERHASI',
+    type: i18n.t('creature.type'),
     level: 1,
     stage: 'egg',
     evolution: 0,
@@ -88,9 +95,27 @@ const MainApp = ({ route, navigation }: any) => {
     try {
       const storedRewards = await AsyncStorage.getItem(`@rewards_${user.family_id}`);
       if (storedRewards) {
-        setRewards(JSON.parse(storedRewards));
+        const parsed: Reward[] = JSON.parse(storedRewards);
+
+        // Auto-translate default rewards if they are in Turkish
+        const TR_MAPPING: Record<string, string> = {
+          'Efsanevi Pizza Gecesi': 'initialRewards.pizzaNight',
+          '30 Dakika Ekran Zamanı': 'initialRewards.screenTime',
+          'Geç Uyuma Hakkı (1 Saat)': 'initialRewards.lateSleep',
+          'Yeni Kahraman Kıyafeti': 'initialRewards.heroOutfit',
+          'Park Macerası Seçimi': 'initialRewards.parkAdventure'
+        };
+
+        const translatedRewards = parsed.map(r => {
+          if (TR_MAPPING[r.name]) {
+            return { ...r, name: i18n.t(TR_MAPPING[r.name]) };
+          }
+          return r;
+        });
+
+        setRewards(translatedRewards);
       } else {
-        setRewards(INITIAL_REWARDS);
+        setRewards(getInitialRewards());
       }
     } catch (e) {
       console.error('Failed to load rewards', e);
@@ -307,26 +332,26 @@ const MainApp = ({ route, navigation }: any) => {
         <View style={styles.navbar}>
           <TouchableOpacity onPress={() => setActiveTab('quests')} style={styles.navItem}>
             <Sword size={22} color={activeTab === 'quests' ? '#fbbf24' : '#64748b'} />
-            <Text style={[styles.navText, activeTab === 'quests' && { color: '#fbbf24' }]}>GÖREVLER</Text>
+            <Text style={[styles.navText, activeTab === 'quests' && { color: '#fbbf24' }]}>{i18n.t('tabs.quests')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setActiveTab('game')} style={styles.navItem}>
             <View style={{ flexDirection: 'row' }}>
               <PawPrint size={18} color={activeTab === 'game' ? '#fbbf24' : '#64748b'} style={{ marginRight: -4 }} />
               <Castle size={18} color={activeTab === 'game' ? '#fbbf24' : '#64748b'} />
             </View>
-            <Text style={[styles.navText, activeTab === 'game' && { color: '#fbbf24' }]}>OYUN</Text>
+            <Text style={[styles.navText, activeTab === 'game' && { color: '#fbbf24' }]}>{i18n.t('tabs.game')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setActiveTab('treasure')} style={styles.navItem}>
             <ShoppingBag size={22} color={activeTab === 'treasure' ? '#fbbf24' : '#64748b'} />
-            <Text style={[styles.navText, activeTab === 'treasure' && { color: '#fbbf24' }]}>HAZİNE</Text>
+            <Text style={[styles.navText, activeTab === 'treasure' && { color: '#fbbf24' }]}>{i18n.t('tabs.treasure')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setActiveTab('notes')} style={styles.navItem}>
             <MessageCircle size={22} color={activeTab === 'notes' ? '#fbbf24' : '#64748b'} />
-            <Text style={[styles.navText, activeTab === 'notes' && { color: '#fbbf24' }]}>NOTLAR</Text>
+            <Text style={[styles.navText, activeTab === 'notes' && { color: '#fbbf24' }]}>{i18n.t('tabs.notes')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleRoleSwitch('parent')} style={styles.navItem}>
             <Users size={22} color='#64748b' />
-            <Text style={styles.navText}>EBEVEYN</Text>
+            <Text style={styles.navText}>{i18n.t('tabs.parent')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -347,13 +372,45 @@ export default function App() {
       const savedUser = await AsyncStorage.getItem('questnest_user');
       if (savedUser) { setInitialUser(JSON.parse(savedUser)); }
     } catch (e) { console.error(e); }
-    finally { setIsLoading(false); }
+    finally {
+      setIsLoading(false);
+      // Hide the native splash screen now that we're ready
+      SplashScreen.hideAsync().catch(() => { });
+    }
   };
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0f172a', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#fbbf24" />
+      <View style={loadingStyles.container}>
+        <LinearGradient
+          colors={['#0a0d14', '#1a1525', '#231d0f', '#1a1525', '#0a0d14']}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+        />
+
+        {/* Radial glow */}
+        <View style={loadingStyles.radialGlow} />
+
+        {/* Big Logo */}
+        <View style={loadingStyles.logoContainer}>
+          <View style={loadingStyles.logoGlow} />
+          <Image
+            source={require('./assets/icon.png')}
+            style={loadingStyles.logo}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Title */}
+        <Text style={loadingStyles.title}>{i18n.t('app.name')}</Text>
+        <Text style={loadingStyles.subtitle}>{i18n.t('app.subtitle')}</Text>
+
+        {/* Loading indicator */}
+        <View style={loadingStyles.loadingRow}>
+          <ActivityIndicator size="small" color="#fbbd23" />
+          <Text style={loadingStyles.loadingText}>{i18n.t('app.loading')}</Text>
+        </View>
       </View>
     );
   }
@@ -401,4 +458,72 @@ const styles = StyleSheet.create({
   },
   navItem: { alignItems: 'center', gap: 4 },
   navText: { color: '#64748b', fontSize: 9, fontWeight: '800' },
+});
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+// Epic Loading Screen Styles
+const loadingStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0a0d14',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radialGlow: {
+    position: 'absolute',
+    top: screenHeight * 0.15,
+    left: screenWidth * 0.5 - screenWidth * 0.5,
+    width: screenWidth,
+    height: screenWidth,
+    borderRadius: screenWidth / 2,
+    backgroundColor: 'rgba(251, 189, 35, 0.12)',
+  },
+  logoContainer: {
+    width: screenWidth * 0.65,
+    height: screenWidth * 0.65,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  logoGlow: {
+    position: 'absolute',
+    width: '120%',
+    height: '120%',
+    borderRadius: screenWidth,
+    backgroundColor: 'rgba(251, 189, 35, 0.15)',
+  },
+  logo: {
+    width: '100%',
+    height: '100%',
+  },
+  title: {
+    fontSize: 42,
+    fontWeight: '900',
+    color: '#fbbd23',
+    textAlign: 'center',
+    textShadowColor: 'rgba(251, 189, 35, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 1,
+    marginBottom: 40,
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    color: 'rgba(251, 189, 35, 0.8)',
+    fontSize: 14,
+    fontWeight: '600',
+  },
 });

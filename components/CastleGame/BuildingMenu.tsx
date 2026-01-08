@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, ScrollView, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { BUILDINGS } from './constants';
+import { getBuildings } from './constants';
 import { BuildingType } from './types';
 import { Coins, X } from 'lucide-react-native';
+import i18n from '../../i18n';
 
 interface BuildingMenuProps {
     onSelectBuilding: (buildingId: string) => void;
@@ -14,13 +15,13 @@ export const BuildingMenu: React.FC<BuildingMenuProps> = ({ onSelectBuilding, on
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>İnşa Et</Text>
+                <Text style={styles.title}>{i18n.t('castle.build')}</Text>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                     <X size={24} color="#fff" />
                 </TouchableOpacity>
             </View>
             <ScrollView horizontal contentContainerStyle={styles.list} showsHorizontalScrollIndicator={false}>
-                {BUILDINGS.map(building => {
+                {getBuildings().map(building => {
                     const canAfford = userGold >= building.cost;
                     return (
                         <TouchableOpacity
