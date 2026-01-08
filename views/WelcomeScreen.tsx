@@ -55,15 +55,15 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                 <Animated.View style={[styles.heroContainer, { opacity: fadeAnim, transform: [{ scale: itemsScale }] }]}>
                     <View style={styles.heroGlow} />
                     <Image
-                        source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDN7gIaM3Cr5-j10G8M8du5gKXWe1p1SRGmTj9N8HKu6CkP-rn56KdsZs_LlBJZS4jhUXnQUd8VEECTczAqjLv5FSOf0fpnoYSvJ-Jzo0ZjCdYFx7xNysUcCVqlRMf3JMMqDYIC245RJWWzdZGqEVNyqfurpDBk2WQJ0cxhdIvdgQ0ZSzcd8lr8nGpFT5TQW0HhCh2FxFT-cKe3fJ0JBk3rAp86EFaq_kcSCliZZluLJxZ9qgbGIguwUm-UuaGotqpEhUvy-EbF' }}
+                        source={require('../assets/icon.png')}
                         style={styles.heroImage}
                         resizeMode="contain"
                     />
                 </Animated.View>
 
                 <Animated.View style={[styles.textContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-                    <Text style={styles.title}>HeroQuest</Text>
-                    <Text style={styles.subtitle}>Ev İşlerini Efsaneye Dönüştür.</Text>
+                    <Text style={styles.title}>QuestNest</Text>
+                    <Text style={styles.subtitle}>Kahraman Aile Görevleri</Text>
                 </Animated.View>
 
                 <Animated.View style={[styles.buttonContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
@@ -140,7 +140,10 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                                         </View>
                                         <Text style={[styles.guideTitle, { color: '#60a5fa' }]}>Büyülü Bağlantı ✨</Text>
                                         <Text style={styles.guideText}>
-                                            Aynı "Aile Kodu" ile 3 farklı cihazdan bağlanın! Sen, Annen ve Baban aynı krallıktasınız.
+                                            Bir kişi "Aile Kodu" oluşturur, diğerleri bu kodla katılır!{'\n\n'}
+                                            👑 Ebeveynler: Kod + PIN ile katılır{'\n'}
+                                            🛡️ Çocuklar: Kod + İsim ile katılır{'\n\n'}
+                                            Anne, Baba ve tüm çocuklar farklı cihazlardan aynı krallığa bağlanabilir.
                                         </Text>
                                     </View>
 
@@ -164,7 +167,7 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                                         <Text style={[styles.guideTitle, { color: '#f472b6' }]}>Kahramanlar ve Yöneticiler</Text>
                                         <Text style={styles.guideText}>
                                             • Ebeveynler: Görev verir, ödülleri onaylar ve altını yönetir.
-                                            {'\n'}• Çocuklar: Maceralara atılır, XP kazanır ve seviye atlar!
+                                            {'\n'}• Çocuklar: Maceralara atılır, altın kazanır ve seviye atlar!
                                         </Text>
                                     </View>
 

@@ -208,8 +208,17 @@ const MainApp = ({ route, navigation }: any) => {
     else { setRole(newRole); }
   };
 
-  const handleUpdateUser = (updates: Partial<UserState>) => {
+  const handleUpdateUser = async (updates: Partial<UserState>) => {
     setUser(prev => ({ ...prev, ...updates }));
+    // Sync avatar to Supabase if updated
+    if (updates.avatar && user.id) {
+      try {
+        await supabase.from('users').update({ avatar: updates.avatar }).eq('id', user.id);
+        console.log('Avatar synced to Supabase');
+      } catch (e) {
+        console.error('Failed to sync avatar:', e);
+      }
+    }
   };
 
   const handleUpdatePet = (updates: Partial<PetState>) => {

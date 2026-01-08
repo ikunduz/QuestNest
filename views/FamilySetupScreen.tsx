@@ -84,7 +84,9 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
                 family_id: family.id,
                 name: childName,
                 role: 'child',
-                hero_class: 'knight'
+                hero_class: 'knight',
+                xp: 0,
+                level: 1
             });
 
             const userState = {

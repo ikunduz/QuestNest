@@ -1,5 +1,5 @@
 {
-  "name": "HeroQuest: Görev Operasyonu",
+  "name": "QuestNest: Kahraman Aile",
   "description": "A gamified RPG quest system for children to track daily responsibilities and earn rewards through an epic fantasy interface.",
   "requestFramePermissions": [
     "camera"
