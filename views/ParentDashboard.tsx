@@ -169,238 +169,198 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* Header - Hero Glass Dark */}
-        <View style={styles.headerContainer}>
+        {/* BABA-DOSTU HEADER - 2 Satır */}
+        <View style={styles.dadHeader}>
           <View>
-            <Text style={styles.greetingText}>Merhaba,</Text>
-            <Text style={styles.parentNameText}>{parentType === 'dad' ? 'Baba 👋' : 'Anne 👋'}</Text>
+            <Text style={styles.dadGreetingSmall}>Merhaba,</Text>
+            <Text style={styles.dadGreetingBig}>{parentType === 'dad' ? 'Baba' : 'Anne'} 👋</Text>
           </View>
-          <TouchableOpacity style={styles.notificationButton} onPress={() => Alert.alert('📬', 'Bildirimler yakında!')}>
-            <BlurView intensity={20} tint="light" style={styles.notificationBlur}>
-              <Bell size={24} color="#fbbf24" />
-              {pendingQuests.length > 0 && <View style={styles.notificationBadge} />}
-            </BlurView>
+          <TouchableOpacity
+            style={styles.dadNotifBtn}
+            onPress={() => Alert.alert('📬', 'Bildirimler yakında!')}
+          >
+            <Bell size={22} color="#fbbf24" />
+            {pendingQuests.length > 0 && <View style={styles.dadNotifDot} />}
           </TouchableOpacity>
         </View>
 
         {/* Tab View Wrapper */}
         {activeTab === 'dashboard' ? (
           <>
-            {/* Bento Grid - Quick Stats */}
-            <View style={styles.bentoGrid}>
-              {/* Card 1: Pending Approvals */}
-              <TouchableOpacity style={[styles.bentoCard, styles.bentoCardLarge]} activeOpacity={0.9} onPress={() => setActiveTab('dashboard')}>
-                <LinearGradient
-                  colors={pendingQuests.length > 0 ? ['rgba(239, 68, 68, 0.2)', 'rgba(239, 68, 68, 0.05)'] : ['rgba(30, 41, 59, 0.6)', 'rgba(30, 41, 59, 0.4)']}
-                  style={StyleSheet.absoluteFill}
-                />
-                <View style={styles.bentoHeader}>
-                  <View style={[styles.iconBox, { backgroundColor: pendingQuests.length > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(148, 163, 184, 0.1)' }]}>
-                    <Bell size={20} color={pendingQuests.length > 0 ? '#f87171' : '#94a3b8'} />
-                  </View>
-                  {pendingQuests.length > 0 && (
-                    <View style={styles.statusBadge}>
-                      <Text style={styles.statusText}>Onay Bekliyor</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.bentoValue}>{pendingQuests.length}</Text>
-                <Text style={styles.bentoLabel}>Bekleyen Görev</Text>
-              </TouchableOpacity>
-
-              {/* Card 2: Active Quests */}
-              <View style={styles.bentoColumn}>
-                <View style={styles.bentoCardSmall}>
-                  <BlurView intensity={20} tint="light" style={styles.glassContent}>
-                    <Users size={20} color="#818cf8" style={{ marginBottom: 8 }} />
-                    <Text style={styles.bentoValueSmall}>{familyMembers.length}</Text>
-                    <Text style={styles.bentoLabelSmall}>Çocuk</Text>
-                  </BlurView>
-                </View>
-                <View style={styles.bentoCardSmall}>
-                  <BlurView intensity={20} tint="light" style={styles.glassContent}>
-                    <Sparkles size={20} color="#fbbf24" style={{ marginBottom: 8 }} />
-                    <Text style={styles.bentoValueSmall}>{familyMembers.reduce((sum, m) => sum + m.xp, 0)}</Text>
-                    <Text style={styles.bentoLabelSmall}>Toplam Altın</Text>
-                  </BlurView>
-                </View>
-              </View>
-            </View>
-
-            {/* Hero Carousel */}
-            <View style={{ marginTop: 24, marginBottom: 8 }}>
-              <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: 'bold', marginLeft: 24, marginBottom: 12 }}>KAHRAMANLAR</Text>
-
-              <ScrollView
-                horizontal
-                pagingEnabled
-                decelerationRate="fast"
-                snapToInterval={Dimensions.get('window').width * 0.8 + 12}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 24, gap: 12 }}
-              >
-                {loadingMembers ? (
-                  <View style={[styles.heroCard, { height: 380, justifyContent: 'center' }]}>
-                    <Text style={{ color: '#94a3b8' }}>Yükleniyor...</Text>
-                  </View>
-                ) : familyMembers.length === 0 ? (
-                  <View style={[styles.heroCard, { height: 380, justifyContent: 'center' }]}>
-                    <View style={[styles.heroAvatarContainer, { borderColor: '#94a3b8' }]}>
-                      <Text style={{ fontSize: 48 }}>👨‍👩‍👧‍👦</Text>
-                    </View>
-                    <Text style={styles.heroName}>Aile Kurulumu</Text>
-                    <Text style={{ color: '#94a3b8', textAlign: 'center', marginTop: 8 }}>Henüz çocuk eklenmemiş.</Text>
-                  </View>
-                ) : (
-                  familyMembers.map((member) => {
-                    const memberLevel = member.level || 1;
-                    const memberXp = member.xp || 0;
-                    const maxXp = memberLevel * 100;
+            {/* ÇOCUK KARTI - Tam Genişlik, Yatay Kaydırmalı */}
+            {familyMembers.length > 0 && (
+              <View style={styles.dadChildSection}>
+                <ScrollView
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  snapToAlignment="center"
+                  decelerationRate="fast"
+                  contentContainerStyle={{ paddingHorizontal: 16 }}
+                >
+                  {familyMembers.map((member, index) => {
                     const heroConfig = HERO_CLASS_LABELS[member.hero_class || 'knight'];
-
                     const isPhotoUrl = member.avatar && (member.avatar.startsWith('http') || member.avatar.startsWith('file://'));
                     const heroEmoji = member.hero_class === 'mage' ? '🔮' : member.hero_class === 'ranger' ? '🏹' : '🛡️';
                     const avatarEmoji = member.avatar && !isPhotoUrl ? getAvatarEmoji(member.avatar) : heroEmoji;
 
                     return (
-                      <View key={member.id} style={[styles.heroCard, { borderColor: heroConfig.color + '40' }]}>
-                        <LinearGradient colors={['#1e293b', '#0f172a']} style={StyleSheet.absoluteFill} />
-                        <LinearGradient colors={[heroConfig.color + '20', 'transparent']} style={styles.heroGlow} />
-
-                        {/* Hero Avatar */}
-                        <View style={[styles.heroAvatarContainer, { borderColor: heroConfig.color }]}>
+                      <View key={member.id} style={styles.dadChildCardFull}>
+                        <View style={[styles.dadChildAvatar, { borderColor: heroConfig.color }]}>
                           {isPhotoUrl ? (
-                            <Image source={{ uri: member.avatar }} style={styles.heroAvatar} />
+                            <Image source={{ uri: member.avatar }} style={styles.dadChildAvatarImg} />
                           ) : (
-                            <View style={[styles.heroAvatar, { backgroundColor: heroConfig.color, justifyContent: 'center', alignItems: 'center' }]}>
-                              <Text style={{ fontSize: 64 }}>{avatarEmoji}</Text>
-                            </View>
+                            <Text style={{ fontSize: 36 }}>{avatarEmoji}</Text>
                           )}
-                          <View style={{ position: 'absolute', bottom: -10, backgroundColor: heroConfig.color, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 }}>
-                            <Text style={{ color: '#1e1b4b', fontWeight: 'bold', fontSize: 12 }}>Lv.{memberLevel}</Text>
+                        </View>
+                        <View style={styles.dadChildInfo}>
+                          <Text style={styles.dadChildName}>{member.name}</Text>
+                          <Text style={[styles.dadChildClass, { color: heroConfig.color }]}>
+                            {heroConfig.label} • Seviye {member.level || 1}
+                          </Text>
+                          <View style={styles.dadChildStats}>
+                            <View style={styles.dadChildStat}>
+                              <Sparkles size={16} color="#fbbf24" />
+                              <Text style={styles.dadChildStatText}>{member.xp || 0} Altın</Text>
+                            </View>
                           </View>
                         </View>
-
-                        {/* Info */}
-                        <Text style={styles.heroName}>{member.name}</Text>
-                        <View style={[styles.heroClassBadge, { borderColor: heroConfig.color + '40', backgroundColor: heroConfig.color + '10' }]}>
-                          <Text style={[styles.heroClassText, { color: heroConfig.color }]}>{heroConfig.label}</Text>
-                        </View>
-
-                        {/* Stats Grid */}
-                        <View style={styles.heroStatsRow}>
-                          <View style={styles.heroStatItem}>
-                            <Zap size={24} color="#fbbf24" style={{ marginBottom: 4 }} />
-                            <Text style={styles.heroStatValue}>{memberXp}/{maxXp}</Text>
-                            <Text style={styles.heroStatLabel}>XP</Text>
+                        {/* Birden fazla çocuk varsa sayfa göstergesi */}
+                        {familyMembers.length > 1 && (
+                          <View style={styles.dadChildPageIndicator}>
+                            <Text style={styles.dadChildPageText}>{index + 1}/{familyMembers.length}</Text>
                           </View>
-                          <View style={{ width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.1)' }} />
-                          <View style={styles.heroStatItem}>
-                            <Shield size={24} color={heroConfig.color} style={{ marginBottom: 4 }} />
-                            <Text style={styles.heroStatValue}>{memberLevel}</Text>
-                            <Text style={styles.heroStatLabel}>SEVİYE</Text>
-                          </View>
-                          <View style={{ width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.1)' }} />
-                          <View style={styles.heroStatItem}>
-                            <Crown size={24} color="#a855f7" style={{ marginBottom: 4 }} />
-                            <Text style={styles.heroStatValue}>#{familyMembers.indexOf(member) + 1}</Text>
-                            <Text style={styles.heroStatLabel}>SIRA</Text>
-                          </View>
-                        </View>
+                        )}
                       </View>
                     );
-                  })
-                )}
-              </ScrollView>
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* ONAY BEKLEYENLer - EN ÜST PRİORİTE */}
+            {pendingQuests.length > 0 && (
+              <View style={styles.dadApprovalSection}>
+                <View style={styles.dadApprovalHeader}>
+                  <Bell size={20} color="#ef4444" />
+                  <Text style={styles.dadApprovalTitle}>
+                    {pendingQuests.length} Görev Onay Bekliyor
+                  </Text>
+                </View>
+                {pendingQuests.slice(0, 3).map((quest) => (
+                  <View key={quest.id} style={styles.dadApprovalItem}>
+                    <View style={styles.dadApprovalLeft}>
+                      <Text style={styles.dadApprovalQuest}>{quest.titleKey}</Text>
+                      <Text style={styles.dadApprovalReward}>+{quest.xpReward} Altın</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.dadApproveBtn}
+                      onPress={() => onApprove(quest.id, quest.xpReward)}
+                    >
+                      <Check size={20} color="#fff" />
+                      <Text style={styles.dadApproveBtnText}>ONAYLA</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* DURUM PANELİ - Kompakt */}
+            <View style={styles.dadStatusPanel}>
+              <View style={styles.dadStatusItem}>
+                <View style={[styles.dadStatusIcon, { backgroundColor: 'rgba(16, 185, 129, 0.2)' }]}>
+                  <CheckCircle2 size={20} color="#10b981" />
+                </View>
+                <Text style={styles.dadStatusNumber}>
+                  {quests.filter(q => q.status === 'completed').length}
+                </Text>
+                <Text style={styles.dadStatusLabel}>Tamamlanan</Text>
+              </View>
+              <View style={styles.dadStatusDivider} />
+              <View style={styles.dadStatusItem}>
+                <View style={[styles.dadStatusIcon, { backgroundColor: 'rgba(251, 191, 36, 0.2)' }]}>
+                  <Sparkles size={20} color="#fbbf24" />
+                </View>
+                <Text style={styles.dadStatusNumber}>
+                  {familyMembers.reduce((sum, m) => sum + m.xp, 0)}
+                </Text>
+                <Text style={styles.dadStatusLabel}>Toplam Altın</Text>
+              </View>
+              <View style={styles.dadStatusDivider} />
+              <View style={styles.dadStatusItem}>
+                <View style={[styles.dadStatusIcon, { backgroundColor: 'rgba(129, 140, 248, 0.2)' }]}>
+                  <Users size={20} color="#818cf8" />
+                </View>
+                <Text style={styles.dadStatusNumber}>{familyMembers.length}</Text>
+                <Text style={styles.dadStatusLabel}>Çocuk</Text>
+              </View>
             </View>
 
-            {/* Horizontal Action Strip */}
-            <View style={{ marginBottom: 24, paddingHorizontal: 24 }}>
-              <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: 'bold', marginBottom: 16 }}>HIZLI İŞLEMLER</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 12 }}
+            {/* ANA BUTONLAR - BÜYÜK & NET */}
+            <View style={styles.dadMainActions}>
+              <TouchableOpacity
+                style={styles.dadBigButton}
+                onPress={() => setIsAdding(true)}
               >
-                <TouchableOpacity style={styles.actionPillPrimary} onPress={() => setIsAdding(true)}>
-                  <Plus size={18} color="#1e1b4b" />
-                  <Text style={[styles.actionPillText, { color: '#1e1b4b' }]}>Yeni Görev</Text>
-                </TouchableOpacity>
+                <Plus size={24} color="#1e1b4b" />
+                <Text style={styles.dadBigButtonText}>Görev Ekle</Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity style={styles.actionPill} onPress={() => setIsAddingReward(true)}>
-                  <Gift size={18} color="#fbbf24" />
-                  <Text style={styles.actionPillText}>Ödül Ekle</Text>
-                </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.dadBigButton, styles.dadBigButtonSecondary]}
+                onPress={() => setIsAddingReward(true)}
+              >
+                <Gift size={24} color="#fbbf24" />
+                <Text style={[styles.dadBigButtonText, { color: '#fbbf24' }]}>Ödül Ekle</Text>
+              </TouchableOpacity>
+            </View>
 
-                <TouchableOpacity style={styles.actionPill} onPress={() => {
+            {/* EK İŞLEMLER - Küçük */}
+            <View style={styles.dadSecondaryActions}>
+              <TouchableOpacity
+                style={styles.dadSmallBtn}
+                onPress={() => {
                   if (familyMembers.length === 0) return Alert.alert('Uyarı', 'Çocuk yok.');
                   setSelectedChild(familyMembers[0]);
                   setShowBonusModal(true);
-                }}>
-                  <DollarSign size={18} color="#10b981" />
-                  <Text style={styles.actionPillText}>Bonus Ver</Text>
-                </TouchableOpacity>
+                }}
+              >
+                <DollarSign size={18} color="#10b981" />
+                <Text style={styles.dadSmallBtnText}>Bonus Ver</Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity style={styles.actionPill} onPress={() => {
+              <TouchableOpacity
+                style={styles.dadSmallBtn}
+                onPress={() => {
                   onSendBlessing(parentType);
                   setShowCelebrationSent(true);
                   setTimeout(() => setShowCelebrationSent(false), 2000);
-                }}>
-                  <Heart size={18} color="#f472b6" />
-                  <Text style={styles.actionPillText}>Kutla</Text>
-                </TouchableOpacity>
+                }}
+              >
+                <Heart size={18} color="#f472b6" />
+                <Text style={styles.dadSmallBtnText}>Kutla</Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity style={styles.actionPill} onPress={() => {
+              <TouchableOpacity
+                style={styles.dadSmallBtn}
+                onPress={() => {
                   if (storedFamilyCode) {
                     Share.share({ message: `QuestNest Aile Kodumuz: ${storedFamilyCode}` });
                   }
-                }}>
-                  <Share2 size={18} color="#818cf8" />
-                  <Text style={styles.actionPillText}>Davet Et</Text>
-                </TouchableOpacity>
-              </ScrollView>
+                }}
+              >
+                <Share2 size={18} color="#818cf8" />
+                <Text style={styles.dadSmallBtnText}>Davet</Text>
+              </TouchableOpacity>
             </View>
 
-
-            {/* Approvals */}
-            < View style={styles.approvalsSection} >
-              <View style={styles.sectionHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={styles.sectionTitle}>Onay Bekleyenler</Text>
-                  <View style={styles.countBadge}><Text style={styles.countText}>{pendingQuests.length}</Text></View>
-                </View>
+            {/* Onay Yoksa Mutlu Mesaj */}
+            {pendingQuests.length === 0 && (
+              <View style={styles.dadAllDone}>
+                <Text style={styles.dadAllDoneEmoji}>✅</Text>
+                <Text style={styles.dadAllDoneText}>Bekleyen görev yok, harika!</Text>
               </View>
-              {
-                pendingQuests.length === 0 ? (
-                  <View style={styles.emptyState}>
-                    <CheckCircle2 size={32} color="#64748b" />
-                    <Text style={styles.emptyText}>Hepsi tamam! Bekleyen rapor yok.</Text>
-                  </View>
-                ) : (
-                  pendingQuests.map((quest) => (
-                    <BlurView key={quest.id} intensity={15} tint="light" style={styles.approvalCard}>
-                      <View style={styles.approvalHeader}>
-                        <View style={styles.approvalInfo}>
-                          <View style={[styles.approvalIconBox, { backgroundColor: '#818cf820' }]}>
-                            <Shield size={20} color="#818cf8" />
-                          </View>
-                          <View>
-                            <Text style={styles.approvalTitle}>{quest.titleKey}</Text>
-                            <Text style={styles.approvalSub}>Görev Raporu • Az önce</Text>
-                          </View>
-                        </View>
-                        <View style={styles.decisionButtons}>
-                          <TouchableOpacity onPress={() => onApprove(quest.id, quest.xpReward)} style={styles.approveButton}>
-                            <Check size={20} color="#1e1b4b" />
-                            <Text style={styles.approveButtonText}>Onayla (+{quest.xpReward} A)</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </BlurView>
-                  ))
-                )
-              }
-            </View >
+            )}
           </>
         ) : (
           <View style={styles.sectionContainer}>
@@ -1135,5 +1095,292 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 16,
     elevation: 8,
+  },
+
+  // === BABA-DOSTU STİLLER ===
+  dadHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 12,
+  },
+  dadGreetingSmall: {
+    color: '#94a3b8',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  dadGreetingBig: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+  dadNotifBtn: {
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+    position: 'relative',
+  },
+  dadNotifDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#ef4444',
+  },
+
+  // Çocuk Kartları
+  dadChildSection: {
+    marginBottom: 16,
+  },
+  dadChildCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+    padding: 14,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    minWidth: 200,
+  },
+  dadChildCardFull: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+    padding: 16,
+    gap: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    width: Dimensions.get('window').width - 32,
+    marginRight: 12,
+  },
+  dadChildPageIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  dadChildPageText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  dadChildAvatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  dadChildAvatarImg: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+  },
+  dadChildInfo: {
+    flex: 1,
+  },
+  dadChildName: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  dadChildClass: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  dadChildStats: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  dadChildStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dadChildStatText: {
+    color: '#fbbf24',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+
+  // Onay Bölümü
+  dadApprovalSection: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  dadApprovalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  dadApprovalTitle: {
+    color: '#f87171',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  dadApprovalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  dadApprovalLeft: {
+    flex: 1,
+  },
+  dadApprovalQuest: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  dadApprovalReward: {
+    color: '#fbbf24',
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+  dadApproveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#10b981',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  dadApproveBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+
+  // Durum Paneli
+  dadStatusPanel: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+    padding: 16,
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  dadStatusItem: {
+    alignItems: 'center',
+  },
+  dadStatusIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  dadStatusNumber: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  dadStatusLabel: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  dadStatusDivider: {
+    width: 1,
+    height: 50,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+
+  // Ana Butonlar
+  dadMainActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 12,
+    marginBottom: 12,
+  },
+  dadBigButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#fbbf24',
+    paddingVertical: 16,
+    borderRadius: 16,
+  },
+  dadBigButtonSecondary: {
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+    borderWidth: 2,
+    borderColor: '#fbbf24',
+  },
+  dadBigButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1e1b4b',
+  },
+
+  // Küçük İşlem Butonları
+  dadSecondaryActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 10,
+    marginBottom: 16,
+  },
+  dadSmallBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  dadSmallBtnText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  // Bekleyen Görev Yok Mesajı
+  dadAllDone: {
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  dadAllDoneEmoji: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  dadAllDoneText: {
+    color: '#64748b',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
