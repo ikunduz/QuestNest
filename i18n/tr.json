@@ -175,7 +175,14 @@
         "messageDeleteFailed": "Mesaj silinemedi.",
         "chatClearFailed": "Sohbet temizlenemedi.",
         "queen": "Kraliçe",
-        "freeSpellLimit": "Ücretsiz büyü hakkınız doldu! (Max 30 mesaj). Yeni mesaj göndermek için eskileri silmelisiniz."
+        "freeSpellLimit": "Ücretsiz büyü hakkınız doldu! (Max 30 mesaj). Yeni mesaj göndermek için eskileri silmelisiniz.",
+        "dailyLimitReached": "Günlük limit doldu!",
+        "tryAgainTomorrow": "Yarın tekrar deneyin.",
+        "upgradeToPremium": "Daha fazla mesaj için Premium'a geçin!",
+        "photoLimitReached": "Günlük fotoğraf limiti doldu!",
+        "photosRemaining": "Kalan fotoğraf",
+        "voiceLimitReached": "Günlük sesli mesaj limiti doldu!",
+        "voiceRemaining": "Kalan sesli mesaj"
     },
     "creature": {
         "title": "Yaratığın",
@@ -358,7 +365,24 @@
         "subtitle": "Ebeveyn kontrollerine erişmek için PIN girin",
         "wrongPin": "Hatalı PIN",
         "tryAgain": "Tekrar deneyin",
-        "cancel": "İptal"
+        "cancel": "İptal",
+        "locked": "Kilitlendi",
+        "lockedMessage": "Çok fazla hatalı deneme. {{time}} sonra tekrar deneyin.",
+        "tryAgainIn": "{{time}} sonra tekrar deneyin",
+        "attemptsRemaining": "Kalan deneme hakkı: {{count}}",
+        "attemptsLeft": "{{count}} deneme hakkı kaldı",
+        "verificationError": "Doğrulama hatası oluştu"
+    },
+    "purchase": {
+        "success": "Satın alma başarılı!",
+        "failed": "Satın alma başarısız.",
+        "restored": "Satın almalar geri yüklendi!",
+        "noPurchases": "Geri yüklenecek satın alma bulunamadı.",
+        "restoreFailed": "Geri yükleme başarısız.",
+        "premium": "Premium",
+        "premiumRequired": "Bu özellik için Premium gerekli",
+        "unlockWith": "Premium ile aç",
+        "tryFree": "7 gün ücretsiz dene"
     },
     "gameHub": {
         "companion": "Yaratık",

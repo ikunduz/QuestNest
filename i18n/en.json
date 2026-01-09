@@ -175,7 +175,14 @@
         "messageDeleteFailed": "Message could not be deleted.",
         "chatClearFailed": "Chat could not be cleared.",
         "queen": "Queen",
-        "freeSpellLimit": "Free spell limit reached! (Max 30 messages). Delete old messages to send new ones."
+        "freeSpellLimit": "Free spell limit reached! (Max 30 messages). Delete old messages to send new ones.",
+        "dailyLimitReached": "Daily limit reached!",
+        "tryAgainTomorrow": "Try again tomorrow.",
+        "upgradeToPremium": "Upgrade to Premium for more messages!",
+        "photoLimitReached": "Daily photo limit reached!",
+        "photosRemaining": "Photos remaining",
+        "voiceLimitReached": "Daily voice limit reached!",
+        "voiceRemaining": "Voice messages remaining"
     },
     "creature": {
         "title": "Your Companion",
@@ -358,7 +365,24 @@
         "subtitle": "Enter PIN to access parent controls",
         "wrongPin": "Wrong PIN",
         "tryAgain": "Try again",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "locked": "Locked",
+        "lockedMessage": "Too many failed attempts. Try again in {{time}}.",
+        "tryAgainIn": "Try again in {{time}}",
+        "attemptsRemaining": "Attempts remaining: {{count}}",
+        "attemptsLeft": "{{count}} attempts left",
+        "verificationError": "Verification error occurred"
+    },
+    "purchase": {
+        "success": "Purchase successful!",
+        "failed": "Purchase failed.",
+        "restored": "Purchases restored!",
+        "noPurchases": "No purchases to restore.",
+        "restoreFailed": "Restore failed.",
+        "premium": "Premium",
+        "premiumRequired": "Premium required for this feature",
+        "unlockWith": "Unlock with Premium",
+        "tryFree": "Try 7 days free"
     },
     "gameHub": {
         "companion": "Companion",

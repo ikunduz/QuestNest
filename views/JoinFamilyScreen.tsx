@@ -2,9 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, Alert, Animated, Easing, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GameButton } from '../components/GameButton';
-import { Search, Users, Sparkles, Key, Shield, Crown } from 'lucide-react-native';
+import { Search, Users, Sparkles, Key, Shield, Crown, AlertTriangle } from 'lucide-react-native';
 import { findFamilyByCode, createUser } from '../services/familyService';
 import { supabase } from '../services/supabaseClient';
+import {
+    verifyPin,
+    hashPin,
+    sanitizeName,
+    sanitizeFamilyCode,
+    checkRateLimit,
+    recordFailedAttempt,
+    resetAttempts
+} from '../services/securityUtils';
 import i18n from '../i18n';
 
 type JoinStep = 'code' | 'found' | 'select_role' | 'parent_pin' | 'child_name';
@@ -17,6 +26,9 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
     const [foundFamily, setFoundFamily] = useState<any>(null);
     const [step, setStep] = useState<JoinStep>('code');
     const [familyPin, setFamilyPin] = useState<string>('');
+    const [pinAttempts, setPinAttempts] = useState(5);
+    const [isLocked, setIsLocked] = useState(false);
+    const [lockoutTime, setLockoutTime] = useState(0);
 
     // Animations
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -91,17 +103,56 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
         }
     };
 
-    const handleVerifyPin = () => {
-        if (pin !== familyPin) {
-            Alert.alert("❌", i18n.t('auth.wrongPinOnly'));
+    const handleVerifyPin = async () => {
+        // Check rate limit first
+        const rateStatus = await checkRateLimit(foundFamily?.id || 'join');
+        if (rateStatus.blocked) {
+            setIsLocked(true);
+            setLockoutTime(rateStatus.remainingTime);
+            Alert.alert(
+                '🔒 ' + i18n.t('pin.locked'),
+                i18n.t('pin.lockedMessage', { time: formatTime(rateStatus.remainingTime) })
+            );
+            return;
+        }
+
+        // Verify PIN using hash comparison
+        const isValid = await verifyPin(pin, familyPin);
+        if (!isValid) {
+            const result = await recordFailedAttempt(foundFamily?.id || 'join');
+            setPinAttempts(result.attemptsRemaining);
+
+            if (result.locked) {
+                setIsLocked(true);
+                setLockoutTime(result.lockoutDuration);
+                Alert.alert(
+                    '🔒 ' + i18n.t('pin.locked'),
+                    i18n.t('pin.lockedMessage', { time: formatTime(result.lockoutDuration) })
+                );
+            } else {
+                Alert.alert(
+                    "❌",
+                    i18n.t('pin.attemptsRemaining', { count: result.attemptsRemaining })
+                );
+            }
             setPin('');
             return;
         }
+
+        // Reset attempts on success
+        await resetAttempts(foundFamily?.id || 'join');
         setStep('child_name');
     };
 
+    const formatTime = (seconds: number): string => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
     const handleJoinAsParent = async () => {
-        if (!userName.trim()) {
+        const sanitizedName = sanitizeName(userName);
+        if (!sanitizedName) {
             Alert.alert("👤", i18n.t('auth.pleaseEnterName'));
             return;
         }
@@ -110,17 +161,17 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
         try {
             const user = await createUser({
                 family_id: foundFamily.id,
-                name: userName.trim(),
+                name: sanitizedName,
                 role: 'parent',
                 parent_type: 'mom',
-                pin_hash: familyPin
+                pin_hash: familyPin  // Already hashed from database
             });
 
             const userState = {
                 id: user.id,
                 family_id: foundFamily.id,
                 role: 'parent',
-                name: userName.trim(),
+                name: sanitizedName,
                 xp: 0,
                 level: 1,
                 streak: 0,
@@ -144,7 +195,8 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
     };
 
     const handleJoinAsChild = async () => {
-        if (!userName.trim()) {
+        const sanitizedName = sanitizeName(userName);
+        if (!sanitizedName) {
             Alert.alert("👤", i18n.t('auth.pleaseEnterName'));
             return;
         }
@@ -153,7 +205,7 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
         try {
             const user = await createUser({
                 family_id: foundFamily.id,
-                name: userName.trim(),
+                name: sanitizedName,
                 role: 'child',
                 hero_class: 'knight',
                 xp: 0,
@@ -164,7 +216,7 @@ export const JoinFamilyScreen: React.FC<{ navigation: any }> = ({ navigation }) 
                 id: user.id,
                 family_id: foundFamily.id,
                 role: 'child',
-                name: userName.trim(),
+                name: sanitizedName,
                 xp: 0,
                 level: 1,
                 streak: 0,

@@ -12,7 +12,8 @@
             "backgroundColor": "#0f172a"
         },
         "ios": {
-            "supportsTablet": true
+            "supportsTablet": true,
+            "bundleIdentifier": "com.heroquest.gorevoperasyonu"
         },
         "android": {
             "adaptiveIcon": {
@@ -23,6 +24,16 @@
         },
         "web": {
             "favicon": "./assets/favicon.png"
+        },
+        "extra": {
+            "admob": {
+                "androidAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
+                "iosAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"
+            },
+            "revenuecat": {
+                "androidApiKey": "goog_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+                "iosApiKey": "appl_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+            }
         }
     }
 }

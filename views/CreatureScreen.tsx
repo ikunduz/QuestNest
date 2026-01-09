@@ -23,7 +23,7 @@ const getStageConfig = (): Record<EvolutionStage, { goal: number; label: string;
     adult: { goal: 10000, label: i18n.t('creature.adult').toUpperCase() }
 });
 
-const EVOLUTION_DURATION = 24 * 60 * 60 * 1000;
+const EVOLUTION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 export const CreatureScreen: React.FC<CreatureScreenProps> = ({ user, onUpdateUser, pet, onUpdatePet }) => {
     const bounceAnim = useRef(new Animated.Value(0)).current;
@@ -142,7 +142,12 @@ export const CreatureScreen: React.FC<CreatureScreenProps> = ({ user, onUpdateUs
                 <TouchableOpacity activeOpacity={0.9} onPress={handlePet}>
                     <Animated.View style={[styles.creatureWrapper, { transform: [{ translateY: bounceAnim }, { scale: scaleAnim }] }]}>
                         <View style={styles.glowCircle} />
-                        <Text style={styles.eggEmoji}>🥚</Text>
+                        {/* Stage-based creature visuals */}
+                        {pet.stage === 'egg' && <Text style={styles.eggEmoji}>🥚</Text>}
+                        {pet.stage === 'hatching' && <Text style={styles.eggEmoji}>🥚✨</Text>}
+                        {pet.stage === 'baby' && <Text style={styles.eggEmoji}>🐣</Text>}
+                        {pet.stage === 'teen' && <Text style={styles.eggEmoji}>🐉</Text>}
+                        {pet.stage === 'adult' && <Text style={styles.eggEmoji}>🔥🐲</Text>}
                         <Sparkles size={36} color="#fbbf24" style={styles.sparkle} />
                         {isSleeping && <Text style={styles.zzz}>Zzz...</Text>}
                     </Animated.View>

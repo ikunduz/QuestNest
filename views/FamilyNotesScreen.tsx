@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert,
 import {
     ArrowLeft, MoreVertical, History, Crown, BadgeCheck, Zap,
     Check, CheckCheck, Shield, Camera, Plus, ClipboardList, Mic,
-    PlusCircle, Smile, Send, Trash2, Clock, Info
+    PlusCircle, Smile, Send, Trash2, Clock, Info, Lock
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -11,6 +11,17 @@ import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../services/supabaseClient';
 import { decode } from 'base64-arraybuffer';
+import {
+    canSendMessage,
+    canSendPhoto,
+    canSendVoice,
+    recordMessageSent,
+    recordPhotoSent,
+    recordVoiceSent,
+    getStorageDays,
+    getUsageSummary,
+    LIMITS
+} from '../services/limitsService';
 import i18n from '../i18n';
 
 const { width } = Dimensions.get('window');
@@ -22,9 +33,18 @@ interface FamilyNotesScreenProps {
     userId: string;
     userName: string;
     onBack: () => void;
+    isPremium?: boolean;
+    onShowPaywall?: () => void;
 }
 
-export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, userId, userName, onBack }) => {
+export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
+    familyId,
+    userId,
+    userName,
+    onBack,
+    isPremium = false,
+    onShowPaywall
+}) => {
     const [newMessage, setNewMessage] = useState('');
     const scrollViewRef = useRef<ScrollView>(null);
     const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -86,41 +106,76 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
 
     const [messages, setMessages] = useState<Message[]>([]);
 
-    // 1. Quota Check (Max 30 Messages)
-    const checkQuota = async () => {
-        const { count, error } = await supabase
-            .from('messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('family_id', familyId);
+    // 1. Daily Message Limit Check
+    const checkMessageLimit = async (): Promise<boolean> => {
+        const result = await canSendMessage(familyId, isPremium);
 
-        if (error) {
-            console.error('Quota check error', error);
-            return false;
-        }
-
-        if (count && count >= 30) {
+        if (!result.allowed) {
             Alert.alert(
-                `📬 ${i18n.t('notes.mailboxFull')}`,
-                i18n.t('notes.freeSpellLimit')
+                `📬 ${i18n.t('notes.dailyLimitReached')}`,
+                isPremium
+                    ? i18n.t('notes.tryAgainTomorrow')
+                    : i18n.t('notes.upgradeToPremium'),
+                isPremium ? [] : [
+                    { text: i18n.t('common.cancel'), style: 'cancel' },
+                    { text: '👑 Premium', onPress: () => onShowPaywall?.() }
+                ]
             );
             return false;
         }
         return true;
     };
 
-    // Auto-cleanup: Delete messages older than 3 days
+    // Check photo limit
+    const checkPhotoLimit = async (): Promise<boolean> => {
+        const result = await canSendPhoto(familyId, isPremium);
+
+        if (!result.allowed) {
+            Alert.alert(
+                `📷 ${i18n.t('notes.photoLimitReached')}`,
+                `${i18n.t('notes.photosRemaining')}: 0/${result.limit}`,
+                isPremium ? [] : [
+                    { text: i18n.t('common.cancel'), style: 'cancel' },
+                    { text: '👑 Premium', onPress: () => onShowPaywall?.() }
+                ]
+            );
+            return false;
+        }
+        return true;
+    };
+
+    // Check voice limit
+    const checkVoiceLimit = async (): Promise<boolean> => {
+        const result = await canSendVoice(familyId, isPremium);
+
+        if (!result.allowed) {
+            Alert.alert(
+                `🎤 ${i18n.t('notes.voiceLimitReached')}`,
+                `${i18n.t('notes.voiceRemaining')}: 0/${result.limit}`,
+                isPremium ? [] : [
+                    { text: i18n.t('common.cancel'), style: 'cancel' },
+                    { text: '👑 Premium', onPress: () => onShowPaywall?.() }
+                ]
+            );
+            return false;
+        }
+        return true;
+    };
+
+    // Auto-cleanup: Delete messages older than storage days
     const cleanupOldMessages = async () => {
         try {
-            const threeDaysAgo = new Date();
-            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-            const cutoffDate = threeDaysAgo.toISOString();
+            const storageDays = getStorageDays(isPremium);
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - storageDays);
+            const cutoffISO = cutoffDate.toISOString();
 
             // 1. Find old messages with media to delete from storage
             const { data: oldMediaMessages } = await supabase
                 .from('messages')
                 .select('id, media_url, type')
                 .eq('family_id', familyId)
-                .lt('created_at', cutoffDate)
+                .lt('created_at', cutoffISO)
                 .in('type', ['image', 'audio']);
 
             if (oldMediaMessages && oldMediaMessages.length > 0) {
@@ -148,7 +203,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                 .from('messages')
                 .delete()
                 .eq('family_id', familyId)
-                .lt('created_at', cutoffDate)
+                .lt('created_at', cutoffISO)
                 .select('id');
 
             if (error) {
@@ -221,8 +276,8 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
     const handleSendMessage = async () => {
         if (!newMessage.trim()) return;
 
-        // Quota Limit Check
-        const canSend = await checkQuota();
+        // Daily Message Limit Check
+        const canSend = await checkMessageLimit();
         if (!canSend) return;
 
         const { error } = await supabase.from('messages').insert({
@@ -236,7 +291,10 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
         });
 
         if (error) Alert.alert('Hata', 'Mesaj gönderilemedi.');
-        else setNewMessage('');
+        else {
+            await recordMessageSent(familyId);
+            setNewMessage('');
+        }
     };
 
     const uploadFile = async (uri: string, type: 'image' | 'audio') => {
@@ -282,8 +340,8 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
     };
 
     const handleCamera = async () => {
-        // Quota Limit Check
-        const canSend = await checkQuota();
+        // Photo Limit Check
+        const canSend = await checkPhotoLimit();
         if (!canSend) return;
 
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -314,6 +372,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                     type: 'image',
                     media_url: publicUrl
                 });
+                await recordPhotoSent(familyId);
             }
         }
     };
@@ -334,8 +393,8 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
             setRecording(null);
 
             if (uri) {
-                // Quota Limit Check
-                const canSend = await checkQuota();
+                // Voice Limit Check
+                const canSend = await checkVoiceLimit();
                 if (!canSend) return;
 
                 const publicUrl = await uploadFile(uri, 'audio');
@@ -351,6 +410,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
                         media_url: publicUrl,
                         duration: finalDuration
                     });
+                    await recordVoiceSent(familyId);
                 }
             }
         } catch (err) {
@@ -363,8 +423,8 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({ familyId, 
             // Manual stop
             await stopRecordingAndSend();
         } else {
-            // Quota Check before starting recording
-            const canSend = await checkQuota();
+            // Voice Check before starting recording
+            const canSend = await checkVoiceLimit();
             if (!canSend) return;
 
             setRecordingDuration(0);

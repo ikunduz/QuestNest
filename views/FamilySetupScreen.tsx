@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Crown, User, Shield, Key, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react-native';
 import { createFamily, createUser } from '../services/familyService';
+import { hashPin, sanitizeName, validatePin } from '../services/securityUtils';
 import i18n from '../i18n';
 
 const { width, height } = Dimensions.get('window');
@@ -64,26 +65,33 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
     };
 
     const handleSetup = async () => {
-        if (pin.length !== 4) {
+        if (!validatePin(pin)) {
             Alert.alert("🔐", i18n.t('auth.pinMustBe4'));
             return;
         }
 
         setLoading(true);
         try {
-            const { family, familyCode } = await createFamily(familyName, childName);
+            // Sanitize inputs
+            const sanitizedFamilyName = sanitizeName(familyName);
+            const sanitizedChildName = sanitizeName(childName);
+
+            // Hash the PIN before storing
+            const hashedPin = await hashPin(pin);
+
+            const { family, familyCode } = await createFamily(sanitizedFamilyName, sanitizedChildName);
 
             const parent = await createUser({
                 family_id: family.id,
                 name: i18n.t('auth.guildMaster'),
                 role: 'parent',
                 parent_type: 'mom',
-                pin_hash: pin
+                pin_hash: hashedPin  // Store hashed PIN, not plain text
             });
 
             const child = await createUser({
                 family_id: family.id,
-                name: childName,
+                name: sanitizedChildName,
                 role: 'child',
                 hero_class: 'knight',
                 xp: 0,
