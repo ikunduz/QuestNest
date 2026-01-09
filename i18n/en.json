@@ -5,6 +5,16 @@
         "tagline": "Where Little Heroes Grow",
         "loading": "Preparing the Kingdom..."
     },
+    "avatar": {
+        "usePhoto": "Use Photo",
+        "takePhoto": "Take Photo",
+        "pickFromGallery": "Pick from Gallery",
+        "selectedPhoto": "Selected Photo",
+        "orSelectPreset": "Or Select a Preset Avatar",
+        "photoSelectFailed": "Could not select photo.",
+        "photoCaptureFailed": "Could not take photo.",
+        "cameraPermissionNeeded": "Camera permission is required to take photos."
+    },
     "welcome": {
         "createFamily": "Create Kingdom",
         "joinFamily": "Join Kingdom",
@@ -182,7 +192,10 @@
         "photoLimitReached": "Daily photo limit reached!",
         "photosRemaining": "Photos remaining",
         "voiceLimitReached": "Daily voice limit reached!",
-        "voiceRemaining": "Voice messages remaining"
+        "voiceRemaining": "Voice messages remaining",
+        "microphonePermissionNeeded": "Microphone permission is required for voice recording.",
+        "recordingFailed": "Could not start recording.",
+        "tapToRecord": "Tap to record"
     },
     "creature": {
         "title": "Your Companion",

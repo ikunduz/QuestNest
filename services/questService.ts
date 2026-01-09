@@ -14,13 +14,18 @@ export const fetchQuests = async (familyId: string) => {
 
 // Görev ekle
 export const addQuest = async (quest: any) => {
+    console.log('questService.addQuest called with:', quest);
     const { data, error } = await supabase
         .from('quests')
         .insert(quest)
         .select()
         .single();
 
-    if (error) throw error;
+    if (error) {
+        console.error('questService.addQuest ERROR:', error);
+        throw error;
+    }
+    console.log('questService.addQuest SUCCESS:', data);
     return data;
 };
 

@@ -5,6 +5,16 @@
         "tagline": "Küçük Kahramanların Büyüdüğü Yer",
         "loading": "Krallık hazırlanıyor..."
     },
+    "avatar": {
+        "usePhoto": "Fotoğraf Kullan",
+        "takePhoto": "Fotoğraf Çek",
+        "pickFromGallery": "Galeriden Seç",
+        "selectedPhoto": "Seçilen Fotoğraf",
+        "orSelectPreset": "Veya Hazır Avatar Seç",
+        "photoSelectFailed": "Fotoğraf seçilemedi.",
+        "photoCaptureFailed": "Fotoğraf çekilemedi.",
+        "cameraPermissionNeeded": "Fotoğraf çekmek için kamera izni gerekiyor."
+    },
     "welcome": {
         "createFamily": "Krallık Kur",
         "joinFamily": "Krallığa Katıl",
@@ -182,7 +192,10 @@
         "photoLimitReached": "Günlük fotoğraf limiti doldu!",
         "photosRemaining": "Kalan fotoğraf",
         "voiceLimitReached": "Günlük sesli mesaj limiti doldu!",
-        "voiceRemaining": "Kalan sesli mesaj"
+        "voiceRemaining": "Kalan sesli mesaj",
+        "microphonePermissionNeeded": "Ses kaydı için mikrofon izni gerekli.",
+        "recordingFailed": "Ses kaydı başlatılamadı.",
+        "tapToRecord": "Kayıt için dokun"
     },
     "creature": {
         "title": "Yaratığın",

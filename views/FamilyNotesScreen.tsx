@@ -11,6 +11,7 @@ import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../services/supabaseClient';
 import { decode } from 'base64-arraybuffer';
+import { notifyNewMessage } from '../services/pushNotificationService';
 import {
     canSendMessage,
     canSendPhoto,
@@ -32,6 +33,8 @@ interface FamilyNotesScreenProps {
     familyId: string;
     userId: string;
     userName: string;
+    userAvatar?: string;  // User's avatar URL or emoji
+    userRole?: 'child' | 'parent';  // User's role for role_label
     onBack: () => void;
     isPremium?: boolean;
     onShowPaywall?: () => void;
@@ -41,6 +44,8 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
     familyId,
     userId,
     userName,
+    userAvatar,
+    userRole = 'child',
     onBack,
     isPremium = false,
     onShowPaywall
@@ -276,24 +281,32 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
     const handleSendMessage = async () => {
         if (!newMessage.trim()) return;
 
-        // Daily Message Limit Check
-        const canSend = await checkMessageLimit();
-        if (!canSend) return;
+        // Limit check temporarily disabled for debugging
+        // const canSend = await checkMessageLimit();
+        // if (!canSend) return;
+
+        // Default avatar if none provided
+        const defaultAvatar = userRole === 'parent'
+            ? '👑'
+            : '🦸';
 
         const { error } = await supabase.from('messages').insert({
             family_id: familyId,
             content: newMessage,
             sender: userName || 'Ben',
-            role: 'child',
-            role_label: userName || 'Kahraman',
-            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuABEdBRn00fVA7DzATIRCQp7F3frVjmhzA7fBUZl9SyY6UPPlQiz2bAX0pkTOIJD-cxsHhPFXK2RMA4EyasBSSq97JJ6tdjFdwmAPB7L5K1jvnXpyQY6Ox_T8kpuniWC6ANX-XEwcl5X-P3CxcJOjAlSH6Fb8LyRtFNUyuAXJ7dOJOybh8-B3zUzLNwQ_oUxpjbZLQsjOU9bRt6JJkiPRsKBM-VoMkocMUNLffHTYKY6mUd7kWltRkEb4rOkkzzRUgVt_3NU',
+            role: userRole,
+            role_label: userName || (userRole === 'parent' ? 'Ebeveyn' : 'Kahraman'),
+            avatar: userAvatar || defaultAvatar,
             type: 'text'
         });
 
-        if (error) Alert.alert('Hata', 'Mesaj gönderilemedi.');
-        else {
-            await recordMessageSent(familyId);
+        if (error) {
+            console.error('Message send error:', error);
+            Alert.alert('Hata', `Mesaj gönderilemedi: ${error.message}`);
+        } else {
             setNewMessage('');
+            // Notify other family members
+            notifyNewMessage(familyId, userId, userName || 'Someone', newMessage);
         }
     };
 
@@ -364,11 +377,11 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
             if (publicUrl) {
                 await supabase.from('messages').insert({
                     family_id: familyId,
-                    content: '📸 Kanıt Gönderildi',
+                    content: i18n.t('notes.evidenceSent'),
                     sender: userName || 'Ben',
-                    role: 'child',
-                    role_label: userName || 'Kahraman',
-                    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuABEdBRn00fVA7DzATIRCQp7F3frVjmhzA7fBUZl9SyY6UPPlQiz2bAX0pkTOIJD-cxsHhPFXK2RMA4EyasBSSq97JJ6tdjFdwmAPB7L5K1jvnXpyQY6Ox_T8kpuniWC6ANX-XEwcl5X-P3CxcJOjAlSH6Fb8LyRtFNUyuAXJ7dOJOybh8-B3zUzLNwQ_oUxpjbZLQsjOU9bRt6JJkiPRsKBM-VoMkocMUNLffHTYKY6mUd7kWltRkEb4rOkkzzRUgVt_3NU',
+                    role: userRole,
+                    role_label: userName || (userRole === 'parent' ? 'Ebeveyn' : 'Kahraman'),
+                    avatar: userAvatar || (userRole === 'parent' ? '👑' : '🦸'),
                     type: 'image',
                     media_url: publicUrl
                 });
@@ -401,11 +414,11 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
                 if (publicUrl) {
                     await supabase.from('messages').insert({
                         family_id: familyId,
-                        content: '🎤 Sesli Mesaj',
+                        content: i18n.t('notes.voiceNote'),
                         sender: userName || 'Ben',
-                        role: 'child',
-                        role_label: userName || 'Kahraman',
-                        avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuABEdBRn00fVA7DzATIRCQp7F3frVjmhzA7fBUZl9SyY6UPPlQiz2bAX0pkTOIJD-cxsHhPFXK2RMA4EyasBSSq97JJ6tdjFdwmAPB7L5K1jvnXpyQY6Ox_T8kpuniWC6ANX-XEwcl5X-P3CxcJOjAlSH6Fb8LyRtFNUyuAXJ7dOJOybh8-B3zUzLNwQ_oUxpjbZLQsjOU9bRt6JJkiPRsKBM-VoMkocMUNLffHTYKY6mUd7kWltRkEb4rOkkzzRUgVt_3NU',
+                        role: userRole,
+                        role_label: userName || (userRole === 'parent' ? 'Ebeveyn' : 'Kahraman'),
+                        avatar: userAvatar || (userRole === 'parent' ? '👑' : '🦸'),
                         type: 'audio',
                         media_url: publicUrl,
                         duration: finalDuration
@@ -640,7 +653,14 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
                             <View style={[styles.messageRow, isParent ? styles.messageLeft : styles.messageRight]}>
                                 {/* Avatar (Left or Right) */}
                                 <View style={styles.avatarContainer}>
-                                    <Image source={{ uri: msg.avatar }} style={[styles.avatar, { borderColor: isParent ? '#fbbd23' : '#60a5fa' }]} />
+                                    {/* Check if avatar is URL or emoji */}
+                                    {msg.avatar && msg.avatar.startsWith('http') ? (
+                                        <Image source={{ uri: msg.avatar }} style={[styles.avatar, { borderColor: isParent ? '#fbbd23' : '#60a5fa' }]} />
+                                    ) : (
+                                        <View style={[styles.avatar, styles.emojiAvatar, { borderColor: isParent ? '#fbbd23' : '#60a5fa' }]}>
+                                            <Text style={{ fontSize: 24 }}>{msg.avatar || (isParent ? '👑' : '🦸')}</Text>
+                                        </View>
+                                    )}
                                     <View style={[styles.roleBadge, { backgroundColor: isParent ? '#fbbd23' : '#3b82f6' }]}>
                                         {isParent ? <Crown size={10} color="#231e10" /> : <Shield size={10} color="#fff" />}
                                     </View>
@@ -692,7 +712,7 @@ export const FamilyNotesScreen: React.FC<FamilyNotesScreenProps> = ({
                                                     <View style={{ width: 0, height: 0, borderLeftWidth: 8, borderTopWidth: 5, borderBottomWidth: 5, borderLeftColor: '#fff', borderTopColor: 'transparent', borderBottomColor: 'transparent', marginLeft: 2 }} />
                                                 </View>
                                                 <View>
-                                                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: 'bold' }}>Ses Kaydı</Text>
+                                                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: 'bold' }}>{i18n.t('notes.voiceRecord')}</Text>
                                                     <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>{msg.duration}</Text>
                                                 </View>
                                             </TouchableOpacity>
@@ -812,7 +832,8 @@ const styles = StyleSheet.create({
     messageRight: { flexDirection: 'row-reverse' },
 
     avatarContainer: { position: 'relative' },
-    avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, backgroundColor: '#000' },
+    avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, backgroundColor: '#1e293b' },
+    emojiAvatar: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#1e293b' },
     roleBadge: { position: 'absolute', bottom: -4, right: -4, width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
 
     bubbleContainer: { maxWidth: '80%', gap: 4 },

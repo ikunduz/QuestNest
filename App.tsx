@@ -14,6 +14,7 @@ import { subscribeToQuests, fetchQuests, updateQuestStatus, addQuest } from './s
 import { Role, Quest, UserState, Reward, PetState, ParentType } from './types';
 import { getInitialRewards } from './constants';
 import i18n from './i18n';
+import { registerForPushNotifications, savePushToken } from './services/pushNotificationService';
 
 // Keep splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync().catch(() => { });
@@ -88,6 +89,19 @@ const MainApp = ({ route, navigation }: any) => {
     };
     loadPetState();
 
+    // Register for push notifications
+    const registerPushToken = async () => {
+      try {
+        const token = await registerForPushNotifications();
+        if (token) {
+          await savePushToken(user.id, token);
+        }
+      } catch (e) {
+        console.error('Push registration failed:', e);
+      }
+    };
+    registerPushToken();
+
     return () => { subscription.unsubscribe(); };
   }, []);
 
@@ -155,7 +169,9 @@ const MainApp = ({ route, navigation }: any) => {
 
   const loadQuests = async () => {
     try {
+      console.log('loadQuests called for family_id:', user.family_id);
       const data = await fetchQuests(user.family_id);
+      console.log('loadQuests received:', data?.length || 0, 'quests');
       const formattedQuests: Quest[] = data.map((q: any) => ({
         id: q.id,
         titleKey: q.title,
@@ -168,6 +184,7 @@ const MainApp = ({ route, navigation }: any) => {
         completedAt: q.completed_at ? new Date(q.completed_at).getTime() : undefined
       }));
       setQuests(formattedQuests);
+      console.log('loadQuests set', formattedQuests.length, 'quests to state');
     } catch (e) {
       console.error('Failed to load quests:', e);
     }
@@ -197,18 +214,21 @@ const MainApp = ({ route, navigation }: any) => {
 
   const handleAddQuest = async (questData: Partial<Quest>) => {
     try {
+      console.log('Adding quest:', questData);
       await addQuest({
         family_id: user.family_id,
         title: questData.titleKey,
-        description: questData.description,
-        xp_reward: questData.xpReward,
-        category: questData.category,
+        description: questData.description || '',
+        xp_reward: questData.xpReward || 25,
+        category: questData.category || 'magic',
+        type: questData.type || 'daily',
         status: 'active'
       });
       loadQuests();
-    } catch (e) {
-      console.error(e);
-      Alert.alert('Hata', 'Görev eklenemedi.');
+      console.log('Quest added successfully');
+    } catch (e: any) {
+      console.error('Quest add error:', e?.message || e);
+      Alert.alert('Hata', `Görev eklenemedi: ${e?.message || 'Bilinmeyen hata'}`);
     }
   };
 
@@ -285,7 +305,14 @@ const MainApp = ({ route, navigation }: any) => {
 
   const renderContent = () => {
     if (activeTab === 'notes') {
-      return <FamilyNotesScreen familyId={user.family_id} userId={user.id} userName={user.name} onBack={() => setActiveTab('quests')} />;
+      return <FamilyNotesScreen
+        familyId={user.family_id}
+        userId={user.id}
+        userName={user.name}
+        userAvatar={user.avatar}
+        userRole={role}
+        onBack={() => setActiveTab('quests')}
+      />;
     }
 
     if (role === 'parent') {

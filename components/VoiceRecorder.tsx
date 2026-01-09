@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Mic, Square, Send, X, Play } from 'lucide-react-native';
 import { Audio } from 'expo-av';
+import i18n from '../i18n';
 
 interface VoiceRecorderProps {
     onRecordComplete: (audioUri: string) => void;
@@ -26,7 +27,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
             // İzin iste
             const { granted } = await Audio.requestPermissionsAsync();
             if (!granted) {
-                Alert.alert('İzin Gerekli', 'Ses kaydı için mikrofon izni gerekli.');
+                Alert.alert(i18n.t('notes.permissionRequired'), i18n.t('notes.microphonePermissionNeeded'));
                 return;
             }
 
@@ -59,7 +60,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
         } catch (error) {
             console.error('Recording error:', error);
-            Alert.alert('Hata', 'Ses kaydı başlatılamadı.');
+            Alert.alert(i18n.t('common.error'), i18n.t('notes.recordingFailed'));
         }
     };
 
@@ -147,7 +148,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
                     <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
                         <Send color="#0f172a" size={18} />
-                        <Text style={styles.sendButtonText}>GÖNDER</Text>
+                        <Text style={styles.sendButtonText}>{i18n.t('common.send').toUpperCase()}</Text>
                     </TouchableOpacity>
                 </View>
             ) : (
@@ -169,7 +170,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
                         </View>
                     )}
                     {!isRecording && (
-                        <Text style={styles.hintText}>Kayıt için bas</Text>
+                        <Text style={styles.hintText}>{i18n.t('notes.tapToRecord')}</Text>
                     )}
                 </View>
             )}

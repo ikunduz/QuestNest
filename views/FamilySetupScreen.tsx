@@ -107,7 +107,7 @@ export const FamilySetupScreen: React.FC<{ navigation: any }> = ({ navigation })
                 level: 1,
                 streak: 0,
                 heroClass: 'knight',
-                pin_hash: pin,
+                pin_hash: hashedPin,  // Store hashed PIN, not plain!
                 familyCode: familyCode // Persist the code for easier retrieval
             };
             await AsyncStorage.setItem('questnest_user', JSON.stringify(userState));

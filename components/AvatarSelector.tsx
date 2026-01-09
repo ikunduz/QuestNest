@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import * as ImagePicker from 'expo-image-picker';
 import { CHILD_AVATARS, PARENT_AVATARS, Avatar } from '../constants/avatars';
+import i18n from '../i18n';
 
 const { width } = Dimensions.get('window');
 const AVATAR_SIZE = (width - 64) / 3;
@@ -45,7 +46,7 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
                 setSelectedAvatar(undefined);
             }
         } catch (e) {
-            Alert.alert('Hata', 'Fotoğraf seçilemedi.');
+            Alert.alert(i18n.t('common.error'), i18n.t('avatar.photoSelectFailed'));
         }
     };
 
@@ -53,7 +54,7 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
         try {
             const { status } = await ImagePicker.requestCameraPermissionsAsync();
             if (status !== 'granted') {
-                Alert.alert('İzin Gerekli', 'Kamera kullanımı için izin vermeniz gerekiyor.');
+                Alert.alert(i18n.t('notes.permissionRequired'), i18n.t('avatar.cameraPermissionNeeded'));
                 return;
             }
 
@@ -68,7 +69,7 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
                 setSelectedAvatar(undefined);
             }
         } catch (e) {
-            Alert.alert('Hata', 'Fotoğraf çekilemedi.');
+            Alert.alert(i18n.t('common.error'), i18n.t('avatar.photoCaptureFailed'));
         }
     };
 
@@ -84,19 +85,19 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
             {/* Photo Section */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>FOTOĞRAF KULLAN</Text>
+                <Text style={styles.sectionTitle}>{i18n.t('avatar.usePhoto').toUpperCase()}</Text>
                 <View style={styles.photoOptions}>
                     <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
                         <LinearGradient colors={['#f59e0b', '#fbbf24']} style={styles.photoButtonGradient}>
                             <Camera color="#0f172a" size={28} />
                         </LinearGradient>
-                        <Text style={styles.photoButtonText}>Fotoğraf Çek</Text>
+                        <Text style={styles.photoButtonText}>{i18n.t('avatar.takePhoto')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
                         <LinearGradient colors={['#6366f1', '#8b5cf6']} style={styles.photoButtonGradient}>
                             <ImagePlus color="#fff" size={28} />
                         </LinearGradient>
-                        <Text style={styles.photoButtonText}>Galeriden Seç</Text>
+                        <Text style={styles.photoButtonText}>{i18n.t('avatar.pickFromGallery')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -111,14 +112,14 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
                                 <Check color="#0f172a" size={20} />
                             </View>
                         </View>
-                        <Text style={styles.previewLabel}>Seçilen Fotoğraf</Text>
+                        <Text style={styles.previewLabel}>{i18n.t('avatar.selectedPhoto')}</Text>
                     </View>
                 )}
             </View>
 
             {/* Preset Avatars Section */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>VEYA HAZIR AVATAR SEÇ</Text>
+                <Text style={styles.sectionTitle}>{i18n.t('avatar.orSelectPreset').toUpperCase()}</Text>
                 <View style={styles.avatarGrid}>
                     {avatars.map((avatar: Avatar) => {
                         const isSelected = selectedAvatar === avatar.id && !photoUrl;
@@ -132,7 +133,7 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
                                 <BlurView intensity={isSelected ? 30 : 15} tint="light" style={styles.avatarCardInner}>
                                     <Text style={styles.avatarEmoji}>{avatar.emoji}</Text>
                                     <Text style={[styles.avatarLabel, isSelected && styles.avatarLabelSelected]}>
-                                        {avatar.label.tr}
+                                        {i18n.locale === 'tr' ? avatar.label.tr : avatar.label.en}
                                     </Text>
                                     {isSelected && (
                                         <View style={styles.checkBadge}>
@@ -155,7 +156,7 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
                     style={styles.confirmButtonGradient}
                 >
                     <Check color="#0f172a" size={22} />
-                    <Text style={styles.confirmButtonText}>KAYDET</Text>
+                    <Text style={styles.confirmButtonText}>{i18n.t('common.save').toUpperCase()}</Text>
                 </LinearGradient>
             </TouchableOpacity>
         </ScrollView>
