@@ -6,7 +6,7 @@ import { BlurView } from 'expo-blur';
 import {
   Bell, Shield, Zap, TrendingUp, Check, X, Plus, Crown, Sparkles,
   CheckCircle2, DollarSign, Gift, Heart, Send, Share2, Users, BarChart2, BookOpen as BookOpenIcon,
-  LayoutDashboard, ClipboardList, BookOpen, Settings, ShoppingBag
+  LayoutDashboard, ClipboardList, BookOpen, Settings, ShoppingBag, MessageCircle
 } from 'lucide-react-native';
 import { GameButton } from '../components/GameButton';
 import { Reward, Quest, ParentType } from '../types';
@@ -60,6 +60,7 @@ interface ParentDashboardProps {
   onAddReward: (reward: Reward) => void;
   onDeleteReward: (id: string) => void;
   onExit: () => void;
+  onOpenNotes?: () => void;
 }
 
 export const ParentDashboard: React.FC<ParentDashboardProps> = ({
@@ -71,7 +72,8 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   onSendBlessing,
   onAddReward,
   onDeleteReward,
-  onExit
+  onExit,
+  onOpenNotes
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [isAddingReward, setIsAddingReward] = useState(false);
@@ -725,6 +727,12 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
           <TouchableOpacity onPress={() => setShowSettings(true)} style={[styles.dockItem, showSettings && styles.dockItemActive]}>
             <Settings size={24} color={showSettings ? "#fbbf24" : "#94a3b8"} />
           </TouchableOpacity>
+
+          {onOpenNotes && (
+            <TouchableOpacity onPress={onOpenNotes} style={styles.dockItem}>
+              <MessageCircle size={24} color="#10b981" />
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity onPress={onExit} style={styles.dockItem}>
             <Shield size={24} color="#60a5fa" />

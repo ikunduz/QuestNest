@@ -8,8 +8,14 @@ const LANGUAGE_KEY = 'questnest_language';
 
 const i18n = new I18n({ en, tr });
 
-// Get device locale
-const deviceLocale = getLocales()[0]?.languageCode || 'en';
+// Get device locale safely - native module might not be ready in production
+let deviceLocale = 'en';
+try {
+    const locales = getLocales();
+    deviceLocale = locales[0]?.languageCode || 'en';
+} catch (e) {
+    console.warn('[i18n] Failed to get device locale, using default:', e);
+}
 
 // Set initial locale (will be overridden by saved preference if exists)
 i18n.locale = deviceLocale === 'tr' ? 'tr' : 'en';

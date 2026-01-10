@@ -109,7 +109,9 @@
         "notificationsSoon": "Notifications coming soon!",
         "noChildren": "No children found.",
         "familyCodeShare": "Our QuestNest Family Code:",
-        "questAdded": "Quest Added!"
+        "questAdded": "Quest Added!",
+        "settings": "Settings",
+        "close": "Close"
     },
     "questTemplates": {
         "cleanRoom": "Clean Your Room",

@@ -109,7 +109,9 @@
         "notificationsSoon": "Bildirimler yakında!",
         "noChildren": "Çocuk yok.",
         "familyCodeShare": "QuestNest Aile Kodumuz:",
-        "questAdded": "✅ Görev Eklendi"
+        "questAdded": "✅ Görev Eklendi",
+        "settings": "Ayarlar",
+        "close": "Kapat"
     },
     "questTemplates": {
         "cleanRoom": "Odasını Temizle",

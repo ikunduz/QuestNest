@@ -327,6 +327,7 @@ const MainApp = ({ route, navigation }: any) => {
           onAddReward={handleAddReward}
           onDeleteReward={handleDeleteReward}
           onExit={() => handleRoleSwitch('child')}
+          onOpenNotes={() => setActiveTab('notes')}
         />
       );
     }
