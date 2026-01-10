@@ -1,7 +1,7 @@
 {
   "name": "heroquest-gorev-operasyonu",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "index.tsx",
   "type": "module",
   "scripts": {

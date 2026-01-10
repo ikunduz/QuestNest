@@ -16,7 +16,9 @@
                 "buildType": "app-bundle"
             },
             "env": {
-                "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+                "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
+                "EXPO_PUBLIC_SUPABASE_URL": "https://rngryltksecymharnvcv.supabase.co",
+                "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJuZ3J5bHRrc2VjeW1oYXJudmN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyNjg3MDIsImV4cCI6MjA4Mjg0NDcwMn0.ECPNqsGb0o9_cgMfZmt3MOV6dOgI4VpPjbZVy9KrZ1k"
             }
         }
     },
