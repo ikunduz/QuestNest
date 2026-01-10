@@ -3,7 +3,7 @@
   "expo": {
     "name": "QuestNest",
     "slug": "questnest-kahraman-aile-gorevleri",
-    "version": "1.0.4",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -22,7 +22,7 @@
         "backgroundColor": "#0f172a"
       },
       "package": "com.heroquest.gorevoperasyonu",
-      "versionCode": 5,
+      "versionCode": 7,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
@@ -66,6 +66,8 @@
       "expo-notifications"
     ],
     "extra": {
+      "supabaseUrl": "https://rngryltksecymharnvcv.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJuZ3J5bHRrc2VjeW1oYXJudmN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyNjg3MDIsImV4cCI6MjA4Mjg0NDcwMn0.ECPNqsGb0o9_cgMfZmt3MOV6dOgI4VpPjbZVy9KrZ1k",
       "admob": {
         "androidAppId": "ca-app-pub-6963403476404310~5843320121",
         "iosAppId": "ca-app-pub-6963403476404310~5843320121"

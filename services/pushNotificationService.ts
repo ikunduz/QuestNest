@@ -4,22 +4,27 @@ import { Platform } from 'react-native';
 import { supabase } from './supabaseClient';
 import Constants from 'expo-constants';
 
-// Configure notification behavior
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-        shouldShowBanner: true,
-        shouldShowList: true,
-    }),
-});
+// Configure notification behavior (wrapped in try-catch for resilience)
+try {
+    Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+            shouldShowBanner: true,
+            shouldShowList: true,
+        }),
+    });
+} catch (e) {
+    console.error('[Push] Failed to set notification handler:', e);
+}
 
 /**
  * Register device for push notifications
  * Returns the Expo Push Token
  */
 export async function registerForPushNotifications(): Promise<string | null> {
+    // Early return if not on device (prevents crashes in emulator)
     if (!Device.isDevice) {
         console.log('Push notifications only work on physical devices');
         return null;
@@ -43,6 +48,11 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
         // Get Expo Push Token
         const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+        if (!projectId) {
+            console.log('[Push] No project ID found, skipping token registration');
+            return null;
+        }
+
         const token = await Notifications.getExpoPushTokenAsync({
             projectId: projectId,
         });
@@ -62,6 +72,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
     } catch (error) {
         console.error('Error registering for push notifications:', error);
+        // Return null instead of crashing the app
         return null;
     }
 }
