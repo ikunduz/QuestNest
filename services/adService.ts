@@ -28,9 +28,9 @@ const AD_UNIT_IDS = {
 
     // Production IDs (replace with your actual AdMob unit IDs)
     // Get these from: https://admob.google.com/
-    PROD_BANNER: 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX',
-    PROD_INTERSTITIAL: 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX',
-    PROD_REWARDED: 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX',
+    PROD_BANNER: 'ca-app-pub-6963403476404310/4123044344',
+    PROD_INTERSTITIAL: 'ca-app-pub-6963403476404310/9590993443',
+    PROD_REWARDED: 'ca-app-pub-6963403476404310/3931472657',
 };
 
 // Use test IDs in __DEV__ mode
