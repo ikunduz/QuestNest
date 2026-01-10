@@ -3,7 +3,7 @@
   "expo": {
     "name": "QuestNest",
     "slug": "questnest-kahraman-aile-gorevleri",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -21,7 +21,23 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0f172a"
       },
-      "package": "com.heroquest.gorevoperasyonu"
+      "package": "com.heroquest.gorevoperasyonu",
+      "versionCode": 4,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.FOREGROUND_SERVICE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,7 +49,21 @@
           "androidAppId": "ca-app-pub-6963403476404310~5843320121",
           "iosAppId": "ca-app-pub-6963403476404310~5843320121"
         }
-      ]
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Bu uygulama görev fotoğrafları için fotoğraf kütüphanenize erişim gerektirir.",
+          "cameraPermission": "Bu uygulama görev fotoğrafları çekmek için kameranıza erişim gerektirir."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Bu uygulama sesli mesaj göndermek için mikrofonunuza erişim gerektirir."
+        }
+      ],
+      "expo-notifications"
     ],
     "extra": {
       "admob": {

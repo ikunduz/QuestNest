@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Dimensions, Modal, Share, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Dimensions, Modal, Share, Alert, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -676,6 +676,33 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         )
       }
 
+      {/* Settings Modal */}
+      {
+        showSettings && (
+          <View style={styles.modalOverlay}>
+            <BlurView intensity={50} tint="dark" style={styles.modalContent}>
+              <Text style={styles.modalTitle}>{i18n.t('parent.settings') || 'Ayarlar'}</Text>
+
+              <TouchableOpacity
+                style={[styles.dadSmallBtn, { marginBottom: 16, backgroundColor: 'rgba(59, 130, 246, 0.2)', width: '100%' }]}
+                onPress={() => {
+                  Linking.openURL('https://doc-hosting.flycricket.io/questnest-privacy-policy/81616845-2970-45ae-9016-18eb903da7a0/privacy');
+                }}
+              >
+                <Shield size={20} color="#60a5fa" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>{i18n.t('common.privacyPolicy') || 'Gizlilik Politikası'}</Text>
+              </TouchableOpacity>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity onPress={() => setShowSettings(false)} style={styles.modalCancel}>
+                  <Text style={styles.modalCancelText}>{i18n.t('parent.close') || 'Kapat'}</Text>
+                </TouchableOpacity>
+              </View>
+            </BlurView>
+          </View>
+        )
+      }
+
       {/* Floating Dock Navigation */}
       <View style={styles.floatingDockContainer}>
         <BlurView intensity={40} tint="dark" style={styles.floatingDock}>
@@ -693,6 +720,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
           <TouchableOpacity onPress={() => setActiveTab('rewards')} style={[styles.dockItem, activeTab === 'rewards' && styles.dockItemActive]}>
             <ShoppingBag size={24} color={activeTab === 'rewards' ? "#fbbf24" : "#94a3b8"} />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => setShowSettings(true)} style={[styles.dockItem, showSettings && styles.dockItemActive]}>
+            <Settings size={24} color={showSettings ? "#fbbf24" : "#94a3b8"} />
           </TouchableOpacity>
 
           <TouchableOpacity onPress={onExit} style={styles.dockItem}>
