@@ -1,39 +1,42 @@
 {
-    "expo": {
-        "name": "QuestNest: Kahraman Aile Görevleri",
-        "slug": "questnest-kahraman-aile-gorevleri",
-        "version": "1.0.0",
-        "orientation": "portrait",
-        "icon": "./assets/icon.png",
-        "userInterfaceStyle": "light",
-        "splash": {
-            "image": "./assets/splash.png",
-            "resizeMode": "contain",
-            "backgroundColor": "#0f172a"
-        },
-        "ios": {
-            "supportsTablet": true,
-            "bundleIdentifier": "com.heroquest.gorevoperasyonu"
-        },
-        "android": {
-            "adaptiveIcon": {
-                "foregroundImage": "./assets/adaptive-icon.png",
-                "backgroundColor": "#0f172a"
-            },
-            "package": "com.heroquest.gorevoperasyonu"
-        },
-        "web": {
-            "favicon": "./assets/favicon.png"
-        },
-        "extra": {
-            "admob": {
-                "androidAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
-                "iosAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"
-            },
-            "revenuecat": {
-                "androidApiKey": "goog_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-                "iosApiKey": "appl_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-            }
-        }
+  "expo": {
+    "name": "QuestNest: Kahraman Aile Görevleri",
+    "slug": "questnest-kahraman-aile-gorevleri",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f172a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.heroquest.gorevoperasyonu"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f172a"
+      },
+      "package": "com.heroquest.gorevoperasyonu"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "admob": {
+        "androidAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
+        "iosAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"
+      },
+      "revenuecat": {
+        "androidApiKey": "goog_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        "iosApiKey": "appl_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+      },
+      "eas": {
+        "projectId": "33c0b406-2bd8-471a-93ea-89097605c015"
+      }
     }
+  }
 }
