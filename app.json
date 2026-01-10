@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "QuestNest: Kahraman Aile Görevleri",
+    "name": "QuestNest",
     "slug": "questnest-kahraman-aile-gorevleri",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -25,10 +25,19 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-6963403476404310~5843320121",
+          "iosAppId": "ca-app-pub-6963403476404310~5843320121"
+        }
+      ]
+    ],
     "extra": {
       "admob": {
-        "androidAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
-        "iosAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"
+        "androidAppId": "ca-app-pub-6963403476404310~5843320121",
+        "iosAppId": "ca-app-pub-6963403476404310~5843320121"
       },
       "revenuecat": {
         "androidApiKey": "goog_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
